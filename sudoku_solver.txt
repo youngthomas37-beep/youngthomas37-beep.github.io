@@ -1,0 +1,383 @@
+sudoku/index.html
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数独求解器</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px 16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f7f7;
+    }
+
+    .sudoku-app {
+      width: min(100%, 520px);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 8px;
+    }
+
+    .hint {
+      color: #666;
+      margin: 0 0 16px;
+      line-height: 1.5;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border: 2px solid #222;
+      background: #fff;
+    }
+
+    .cell {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #bbb;
+      border-radius: 0;
+      padding: 0;
+      text-align: center;
+      font-size: clamp(18px, 5vw, 28px);
+      color: #111;
+      background: #fff;
+      outline: none;
+    }
+
+    .cell:focus {
+      background: #e8f2ff;
+    }
+
+    .cell.col-2,
+    .cell.col-5 {
+      border-right: 2px solid #222;
+    }
+
+    .cell.row-2,
+    .cell.row-5 {
+      border-bottom: 2px solid #222;
+    }
+
+    .cell.given {
+      font-weight: 700;
+      background: #f2f2f2;
+    }
+
+    .cell.solved {
+      color: #007a4d;
+      font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button {
+      padding: 9px 14px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    button:hover {
+      background: #f0f0f0;
+    }
+
+    #message {
+      min-height: 1.5em;
+      margin: 12px 0 0;
+    }
+
+    #message.error {
+      color: #b00020;
+    }
+
+    #message.success {
+      color: #007a4d;
+    }
+  </style>
+</head>
+<body>
+  <main class="sudoku-app">
+    <h1>数独求解器</h1>
+    <p class="hint">在格子中输入已知数字，留空表示未知。点击“求解”得到答案。</p>
+
+    <div id="board" class="board" aria-label="数独棋盘"></div>
+
+    <div class="actions">
+      <button id="solveBtn">求解</button>
+      <button id="clearBtn">清空</button>
+      <button id="exampleBtn">示例</button>
+    </div>
+
+    <p id="message"></p>
+  </main>
+
+  <script>
+    const boardEl = document.getElementById("board");
+    const messageEl = document.getElementById("message");
+    const inputs = [];
+
+    const EXAMPLE = [
+      [5, 3, 0, 0, 7, 0, 0, 0, 0],
+      [6, 0, 0, 1, 9, 5, 0, 0, 0],
+      [0, 9, 8, 0, 0, 0, 0, 6, 0],
+      [8, 0, 0, 0, 6, 0, 0, 0, 3],
+      [4, 0, 0, 8, 0, 3, 0, 0, 1],
+      [7, 0, 0, 0, 2, 0, 0, 0, 6],
+      [0, 6, 0, 0, 0, 0, 2, 8, 0],
+      [0, 0, 0, 4, 1, 9, 0, 0, 5],
+      [0, 0, 0, 0, 8, 0, 0, 7, 9]
+    ];
+
+    function setMessage(text, type = "") {
+      messageEl.textContent = text;
+      messageEl.className = type;
+    }
+
+    function createBoard() {
+      boardEl.innerHTML = "";
+      inputs.length = 0;
+
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const input = document.createElement("input");
+          input.type = "text";
+          input.inputMode = "numeric";
+          input.maxLength = 1;
+          input.className = "cell";
+
+          if (c === 2 || c === 5) input.classList.add(`col-${c}`);
+          if (r === 2 || r === 5) input.classList.add(`row-${r}`);
+
+          input.dataset.row = r;
+          input.dataset.col = c;
+
+          input.addEventListener("input", () => {
+            input.value = input.value.replace(/[^1-9]/g, "");
+            if (input.value) {
+              const nextIndex = r * 9 + c + 1;
+              if (nextIndex < 81) inputs[nextIndex].focus();
+            }
+          });
+
+          input.addEventListener("keydown", (e) => handleKey(e, r, c));
+
+          boardEl.appendChild(input);
+          inputs.push(input);
+        }
+      }
+    }
+
+    function handleKey(e, r, c) {
+      let nr = r;
+      let nc = c;
+
+      if (e.key === "ArrowUp") nr = Math.max(0, r - 1);
+      else if (e.key === "ArrowDown") nr = Math.min(8, r + 1);
+      else if (e.key === "ArrowLeft") nc = Math.max(0, c - 1);
+      else if (e.key === "ArrowRight") nc = Math.min(8, c + 1);
+      else return;
+
+      e.preventDefault();
+      inputs[nr * 9 + nc].focus();
+    }
+
+    function readBoard() {
+      const board = Array.from({ length: 9 }, () => Array(9).fill(0));
+
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const value = inputs[r * 9 + c].value.trim();
+
+          if (value === "") {
+            board[r][c] = 0;
+          } else if (/^[1-9]$/.test(value)) {
+            board[r][c] = Number(value);
+          } else {
+            throw new Error(`第 ${r + 1} 行第 ${c + 1} 列只能填 1-9`);
+          }
+        }
+      }
+
+      return board;
+    }
+
+    function validateBoard(board) {
+      for (let i = 0; i < 9; i++) {
+        const row = new Set();
+        const col = new Set();
+        const box = new Set();
+
+        for (let j = 0; j < 9; j++) {
+          const rv = board[i][j];
+          if (rv && row.has(rv)) return `第 ${i + 1} 行有重复数字 ${rv}`;
+          row.add(rv);
+
+          const cv = board[j][i];
+          if (cv && col.has(cv)) return `第 ${i + 1} 列有重复数字 ${cv}`;
+          col.add(cv);
+        }
+
+        const boxRowStart = Math.floor(i / 3) * 3;
+        const boxColStart = (i % 3) * 3;
+
+        for (let r = boxRowStart; r < boxRowStart + 3; r++) {
+          for (let c = boxColStart; c < boxColStart + 3; c++) {
+            const bv = board[r][c];
+            if (bv && box.has(bv)) {
+              return `第 ${i + 1} 个 3x3 宫有重复数字 ${bv}`;
+            }
+            box.add(bv);
+          }
+        }
+      }
+
+      return "";
+    }
+
+    function findEmpty(board) {
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (board[r][c] === 0) return [r, c];
+        }
+      }
+      return null;
+    }
+
+    function isValid(board, row, col, num) {
+      for (let i = 0; i < 9; i++) {
+        if (board[row][i] === num) return false;
+        if (board[i][col] === num) return false;
+      }
+
+      const boxRowStart = Math.floor(row / 3) * 3;
+      const boxColStart = Math.floor(col / 3) * 3;
+
+      for (let r = boxRowStart; r < boxRowStart + 3; r++) {
+        for (let c = boxColStart; c < boxColStart + 3; c++) {
+          if (board[r][c] === num) return false;
+        }
+      }
+
+      return true;
+    }
+
+    function solve(board) {
+      const empty = findEmpty(board);
+      if (!empty) return true;
+
+      const [row, col] = empty;
+
+      for (let num = 1; num <= 9; num++) {
+        if (isValid(board, row, col, num)) {
+          board[row][col] = num;
+          if (solve(board)) return true;
+          board[row][col] = 0;
+        }
+      }
+
+      return false;
+    }
+
+    function renderSolution(board) {
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const input = inputs[r * 9 + c];
+
+          if (!input.classList.contains("given")) {
+            input.value = board[r][c] === 0 ? "" : String(board[r][c]);
+            input.classList.add("solved");
+          }
+        }
+      }
+    }
+
+    function clearBoard() {
+      inputs.forEach((input) => {
+        input.value = "";
+        input.classList.remove("given", "solved");
+      });
+      setMessage("");
+    }
+
+    function loadExample() {
+      clearBoard();
+
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const value = EXAMPLE[r][c];
+          if (value !== 0) inputs[r * 9 + c].value = String(value);
+        }
+      }
+
+      setMessage("已加载示例，点击“求解”查看结果。", "success");
+    }
+
+    document.getElementById("solveBtn").addEventListener("click", () => {
+      // 如果上次已经求解，先清掉绿色答案，只基于原始输入重新计算
+      inputs.forEach((input) => {
+        if (input.classList.contains("solved")) {
+          input.value = "";
+          input.classList.remove("solved");
+        }
+      });
+
+      let board;
+
+      try {
+        board = readBoard();
+      } catch (err) {
+        setMessage(err.message, "error");
+        return;
+      }
+
+      const conflict = validateBoard(board);
+
+      if (conflict) {
+        setMessage(conflict, "error");
+        return;
+      }
+
+      inputs.forEach((input, index) => {
+        const r = Math.floor(index / 9);
+        const c = index % 9;
+        input.classList.toggle("given", board[r][c] !== 0);
+        input.classList.remove("solved");
+      });
+
+      const solution = board.map((row) => row.slice());
+
+      if (solve(solution)) {
+        renderSolution(solution);
+        setMessage("求解完成。绿色数字为求解器填入的答案。", "success");
+      } else {
+        setMessage("这个数独无解，请检查输入。", "error");
+      }
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", clearBoard);
+    document.getElementById("exampleBtn").addEventListener("click", loadExample);
+
+    createBoard();
+  </script>
+</body>
+</html>
