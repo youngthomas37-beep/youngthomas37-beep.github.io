@@ -125,6 +125,9 @@ async function solve(){
  try{
   setStatus(solverReady?"正在搜索解法……":"正在初始化求解表并搜索，请稍候……");
   await initializeSolver();
+  if(cube.isSolved()){
+   solution=[];stepIndex=0;$("solution").textContent="当前魔方已经复原，无需转动。";updateStepControls();setStatus("魔方已经处于复原状态。","ok");return;
+  }
   const before=stateString();
   const alg=cube.solve();
   if(typeof alg!=="string")throw new Error("求解器没有返回有效的解法。");
@@ -161,8 +164,10 @@ function importState(){
  const counts={};for(const c of value)counts[c]=(counts[c]||0)+1;
  if(FACE_ORDER.some(f=>counts[f]!==9)){setStatus("状态无效：U、R、F、D、L、B 每个字母必须恰好出现 9 次。","error");return;}
  try{
-  cube=Cube.fromString(value);
-  if(!cube||typeof cube.move!=="function")throw new Error("无法解析该状态。");
+  const parsed=Cube.fromString(value);
+  if(!parsed||typeof parsed.move!=="function")throw new Error("无法解析该状态。");
+  if(parsed.asString()!==value)throw new Error("贴纸排列无法对应合法可达状态；请检查颜色、方向或是否录入错误。");
+  cube=parsed;
   history=[];invalidateSolution();render();setStatus("状态已导入。是否为物理可达状态将在求解时进一步验证。","ok");
  }catch(e){setStatus("导入失败："+e.message,"error");}
 }
