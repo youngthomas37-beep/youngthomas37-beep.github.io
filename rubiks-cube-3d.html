@@ -162,7 +162,7 @@ function axisAndLayer(move){
 }
 function turn(move,after){
  if(busy)return Promise.resolve(false);
- busy=true;stopAuto();updateStats();status('正在执行 '+move+' …');
+ busy=true;updateStats();status('正在执行 '+move+' …');
  var cfg=axisAndLayer(move),selected=cubelets.filter(function(c){return Math.round(c.position.getComponent(cfg.coord))===cfg.layer;});
  layerGroup=new THREE.Group();root.add(layerGroup);
  selected.forEach(function(c){root.remove(c);layerGroup.add(c);});
@@ -245,9 +245,9 @@ function copyState(){
 function undo(){
  if(busy||!history.length)return;stopAuto();cube=Cube.fromString(history.pop());solution=[];cursor=0;drawCube();updateStats();status('已撤销最后一次手动转动。','ok');
 }
-document.querySelectorAll('[data-move]').forEach(function(b){b.addEventListener('click',async function(){if(busy)return;history.push(cube.asString());solution=[];cursor=0;await turn(b.dataset.move,function(){updateStats();});$('resultLine').textContent='状态已改变';status('已执行 '+b.dataset.move+'。','ok');});});
+document.querySelectorAll('[data-move]').forEach(function(b){b.addEventListener('click',async function(){if(busy)return;stopAuto();history.push(cube.asString());solution=[];cursor=0;await turn(b.dataset.move,function(){updateStats();});$('resultLine').textContent='状态已改变';status('已执行 '+b.dataset.move+'。','ok');});});
 $('scrambleBtn').addEventListener('click',scramble);$('resetBtn').addEventListener('click',reset);$('solveBtn').addEventListener('click',solve);
-$('nextBtn').addEventListener('click',nextStep);$('prevBtn').addEventListener('click',prevStep);
+$('nextBtn').addEventListener('click',function(){stopAuto();nextStep();});$('prevBtn').addEventListener('click',function(){stopAuto();prevStep();});
 $('playBtn').addEventListener('click',function(){play();});$('stopBtn').addEventListener('click',function(){stopAuto();status('自动播放已暂停。');});
 $('speed').addEventListener('input',function(){$('speedLabel').textContent=this.value;ANIM_MS=Number(this.value);});
 $('importBtn').addEventListener('click',importState);$('copyBtn').addEventListener('click',copyState);$('undoBtn').addEventListener('click',undo);
