@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="交互式三维魔方求解器：3D 转动动画、Kociemba 两阶段求解、逐步复原与状态导入。">
+<title>3D 魔方实验室 | Thomas Young</title>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#101e32;--panel2:#162943;--line:#2b4361;--text:#eef5ff;--muted:#9fb2cc;--blue:#1687ff;--green:#20d99a;--yellow:#ffd52a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -10%,#19365a 0,transparent 52%),var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}a{color:#8bd3ff;text-decoration:none}button,input,select{font:inherit}button{cursor:pointer;color:var(--text);background:#1a304d;border:1px solid #345171;border-radius:10px;padding:10px 12px;transition:.15s}button:hover{background:#254569;border-color:#5c8bb7}button:disabled{opacity:.4;cursor:not-allowed}.wrap{max-width:1440px;margin:auto;padding:18px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 4px 20px}.brand{display:flex;gap:14px;align-items:center}.logo{font-size:32px}.brand h1{font-size:22px;margin:0}.brand p{margin:2px 0 0;color:var(--muted);font-size:13px}.nav{display:flex;gap:10px;flex-wrap:wrap}.nav a{padding:9px 12px;border-radius:9px;background:#12243a;border:1px solid #263d58}.layout{display:grid;grid-template-columns:280px minmax(340px,1fr) 300px;gap:16px}.panel{background:linear-gradient(160deg,rgba(20,39,64,.97),rgba(10,24,41,.97));border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 14px 36px #0002}.panel h2{font-size:17px;margin:0;padding:15px 16px;border-bottom:1px solid #263b55}.inside{padding:15px}.group{margin-bottom:18px}.label{color:#b8c8df;font-size:13px;margin-bottom:9px}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1;min-width:55px}.faces button{font-weight:800;color:#07111f;border:0}.U{background:#f4f6fa}.R{background:#f43b3b}.F{background:#1fca83}.D{background:#ffd72e}.L{background:#ff9c2e}.B{background:#2188ff}.faces button:hover{filter:brightness(1.15)}.primary{background:linear-gradient(120deg,#087df4,#299dff);border-color:#3ea5ff;font-weight:700}.green{background:#0e4b43;border-color:#1a8d77}.field{display:flex;gap:7px}.field input{min-width:0;width:100%;background:#091727;border:1px solid #314966;color:var(--text);border-radius:9px;padding:10px}.muted{color:var(--muted);font-size:12px}.stage{min-height:600px;display:flex;flex-direction:column}.stage-head{display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid #263b55}.stage-head h2{border:0;padding:0}.stage-head span{color:var(--muted);font-size:12px}#view{height:530px;min-height:400px;position:relative;background:radial-gradient(ellipse at 50% 48%,#173656 0,#0b1a2b 55%,#071321 100%)}#view canvas{display:block;width:100%;height:100%;outline:none}.view-hint{position:absolute;bottom:10px;left:12px;color:#b6c9df;background:#071321aa;padding:6px 9px;border-radius:7px;font-size:12px;pointer-events:none}.status{padding:10px 14px;border-top:1px solid #263b55;color:#b6c9df;font-size:13px;min-height:43px}.status.ok{color:#67edb5}.status.error{color:#ff9da7}.resultline{padding:12px;border-radius:9px;background:#0c3c37;color:#6cf0ba;margin-bottom:14px;font-weight:700}.stat{display:flex;justify-content:space-between;gap:8px;padding:5px 0}.moves{max-height:260px;overflow:auto;margin-top:12px;border:1px solid #263d58;border-radius:9px}.move{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:6px 10px;border-bottom:1px solid #1c3048;font-family:ui-monospace,monospace}.move.active{background:#14548a;color:#fff}.move span:first-child{color:#8ea9c7}.timeline{margin-top:16px}.timeline-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.progress{height:7px;background:#233953;border-radius:99px;overflow:hidden;flex:1;min-width:90px}.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1284ff,#20d99a);transition:width .2s}.steps{display:flex;gap:9px;overflow-x:auto;padding:12px 0 4px}.step{min-width:112px;border:1px solid #2b4361;border-radius:10px;padding:9px;text-align:center;background:#0a192a;font-size:12px}.step strong{display:block;font-size:18px;margin:4px}.step.active{border-color:#19d89a;box-shadow:0 0 0 1px #19d89a55}.foot{color:var(--muted);font-size:12px;text-align:center;padding:20px 0 8px}.mobile-note{display:none}
+@media(max-width:1000px){.layout{grid-template-columns:1fr 1.4fr}.right{grid-column:1/-1}.right .moves{max-height:180px}.stage{grid-column:2;grid-row:1/3}#view{height:600px}.left{grid-column:1;grid-row:1/3}}@media(max-width:700px){.wrap{padding:10px}.top{align-items:flex-start;flex-direction:column}.layout{display:flex;flex-direction:column}.stage{order:0;min-height:0}#view{height:400px;min-height:340px}.left{order:1}.right{order:2}.stage-head{padding:12px}.brand h1{font-size:19px}.mobile-note{display:block}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div class="brand"><div class="logo">🧊</div><div><h1>3D 魔方实验室</h1><p>Rubik’s Cube Lab · 交互式三维复原与算法演示</p></div></div><nav class="nav"><a href="index.html">← 个人主页</a><a href="rubiks-cube.html">2D 版本</a><a href="#theory">算法说明</a></nav></header>
+<main class="layout">
+<section class="panel left"><h2>▣ 魔方控制</h2><div class="inside">
+<div class="group"><div class="label">转动面</div><div class="row faces"><button class="U" data-move="U">U</button><button class="R" data-move="R">R</button><button class="F" data-move="F">F</button><button class="D" data-move="D">D</button><button class="L" data-move="L">L</button><button class="B" data-move="B">B</button></div><div class="muted" style="margin-top:7px">点击面字母顺时针转动；使用 ′ 或 2 进行逆时针或半圈转动。</div></div>
+<div class="group"><div class="label">快速转动</div><div class="row"><button data-move="U'">U′</button><button data-move="R'">R′</button><button data-move="F'">F′</button><button data-move="D'">D′</button><button data-move="L'">L′</button><button data-move="B'">B′</button></div><div class="row" style="margin-top:8px"><button data-move="U2">U2</button><button data-move="R2">R2</button><button data-move="F2">F2</button><button data-move="D2">D2</button><button data-move="L2">L2</button><button data-move="B2">B2</button></div></div>
+<div class="group"><div class="label">打乱与复原</div><div class="row"><button id="scrambleBtn">🎲 随机打乱</button><button id="resetBtn">↻ 复位</button></div><div class="row" style="margin-top:8px"><button id="solveBtn" class="primary">✦ 计算复原步骤</button></div><div class="muted" style="margin-top:8px">首次求解需要初始化查找表，可能稍等片刻。</div></div>
+<div class="group"><div class="label">解法播放</div><div class="row"><button id="prevBtn">◀ 上一步</button><button id="nextBtn">下一步 ▶</button></div><div class="row" style="margin-top:8px"><button id="playBtn" class="green">▶ 自动播放</button><button id="stopBtn">Ⅱ 暂停</button></div><div class="label" style="margin-top:12px">动画速度</div><input id="speed" type="range" min="120" max="1000" step="40" value="360" style="width:100%"><div class="muted">当前：<span id="speedLabel">360</span> 毫秒/步</div></div>
+<div class="group"><div class="label">导入魔方状态（54 个字符）</div><div class="field"><input id="stateInput" placeholder="UUUUUUUUURRRRRRRRR..." maxlength="54"><button id="importBtn">导入</button></div><div class="muted" style="margin-top:7px">顺序：U、R、F、D、L、B；每面 9 个字符。中心颜色固定为该面的标记。</div></div>
+<div class="row"><button id="copyBtn">复制当前状态</button><button id="undoBtn">撤销一步</button></div>
+</div></section>
+<section class="panel stage"><div class="stage-head"><h2>◈ 3D 实时视图</h2><span>拖动旋转视角 · 滚轮缩放</span></div><div id="view" aria-label="可交互三维魔方"></div><div class="status" id="status">正在初始化 3D 场景……</div></section>
+<section class="panel right"><h2>✦ 求解结果</h2><div class="inside"><div class="resultline" id="resultLine">等待求解</div><div class="stat"><span>解法步数</span><strong id="moveCount">—</strong></div><div class="stat"><span>执行进度</span><strong id="progressText">0 / 0</strong></div><div class="stat"><span>当前动作</span><strong id="currentMove">—</strong></div><div class="moves" id="movesList"><div class="move"><span>—</span><span>点击“计算复原步骤”开始</span></div></div><p class="muted">求解结果由浏览器中的 cubejs 库计算。动画逐步更新魔方状态，并在完成后验证复原结果。</p></div></section>
+</main>
+<section class="panel timeline"><div class="inside"><div class="timeline-head"><h2 style="font-size:17px;margin:0">复原过程演示</h2><div class="progress"><i id="progressBar"></i></div><strong id="timelineCount">0 / 0</strong></div><div class="steps" id="steps"></div></div></section>
+<section class="panel" id="theory" style="margin-top:16px"><h2>算法原理与论文关联</h2><div class="inside"><p><strong>Kociemba 两阶段算法：</strong>第一阶段把任意合法状态变换到一个受限子群，使角块与棱块朝向满足约束，并将指定中间层棱块放回目标层；第二阶段只使用受限动作完成复原。搜索通常采用 IDA* 与预计算剪枝表。</p><p><strong>与上传论文的关系：</strong>《Adventures in Group Theory: Rubik’s Cube》讨论了子群、阶段化求解和 Kociemba 方法；《Algorithms for Solving Rubik’s Cubes》重点研究大尺寸魔方的小块簇与最坏情况步数复杂度。此页面的实际 3×3×3 求解器使用 Kociemba 两阶段实现，不宣称复现大尺寸魔方论文的全部证明。</p><p class="muted">依赖 Three.js 与 cubejs 的 CDN 脚本；需要网络连接。该页面在浏览器本地执行求解，不向服务器上传魔方状态。</p></div></section>
+<footer class="foot">Thomas Young · 3D Rubik’s Cube Lab · For learning and visualization</footer>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cubejs@1.3.2/lib/cube.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cubejs@1.3.2/lib/solve.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var COLORS={U:0xf4f6f8,R:0xe52f36,F:0x20bd76,D:0xffd52b,L:0xff8c24,B:0x176bdb};
+var FACE_ORDER=['U','R','F','D','L','B'];
+var cube=new Cube(), solution=[], cursor=0, history=[], busy=false, autoplay=null, solverReady=false;
+var scene,camera,renderer,controls,root,layerGroup,raycaster,mouse;
+var cubelets=[], stickerMeshes=[];
+var ANIM_MS=360;
+var statusEl=$('status');
+function status(s,type){statusEl.textContent=s;statusEl.className='status'+(type?' '+type:'');}
+function faceletMap(face,index){
+ var r=Math.floor(index/3),c=index%3;
+ if(face==='U')return {p:[c-1,1,r-1],n:[0,1,0]};
+ if(face==='D')return {p:[c-1,-1,1-r],n:[0,-1,0]};
+ if(face==='F')return {p:[c-1,1-r,1],n:[0,0,1]};
+ if(face==='B')return {p:[1-c,1-r,-1],n:[0,0,-1]};
+ if(face==='R')return {p:[1,1-r,1-c],n:[1,0,0]};
+ return {p:[-1,1-r,c-1],n:[-1,0,0]};
+}
+function stickerBasis(normal){
+ var n=new THREE.Vector3(normal[0],normal[1],normal[2]);
+ var q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),n);
+ return q;
+}
+function init3D(){
+ var host=$('view');
+ scene=new THREE.Scene();
+ camera=new THREE.PerspectiveCamera(36,host.clientWidth/host.clientHeight,0.1,100);
+ camera.position.set(5.8,5.2,7.5);
+ renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+ renderer.setSize(host.clientWidth,host.clientHeight);
+ renderer.setClearColor(0x071321,0);
+ renderer.outputEncoding=THREE.sRGBEncoding;
+ host.appendChild(renderer.domElement);
+ controls=new THREE.OrbitControls(camera,renderer.domElement);
+ controls.enableDamping=true;controls.dampingFactor=.07;controls.minDistance=5;controls.maxDistance=12;controls.target.set(0,0,0);
+ scene.add(new THREE.HemisphereLight(0xcfe7ff,0x26354b,1.35));
+ var light=new THREE.DirectionalLight(0xffffff,1.25);light.position.set(5,8,7);scene.add(light);
+ var fill=new THREE.DirectionalLight(0x6ba9ff,.65);fill.position.set(-5,1,-6);scene.add(fill);
+ root=new THREE.Group();scene.add(root);
+ var floor=new THREE.Mesh(new THREE.CircleGeometry(3.2,64),new THREE.MeshBasicMaterial({color:0x10263d,transparent:true,opacity:.32}));
+ floor.rotation.x=-Math.PI/2;floor.position.y=-1.8;scene.add(floor);
+ raycaster=new THREE.Raycaster();mouse=new THREE.Vector2();
+ renderer.domElement.addEventListener('dblclick',function(){camera.position.set(5.8,5.2,7.5);controls.target.set(0,0,0);controls.update();});
+ window.addEventListener('resize',resize);
+ drawCube();
+ animate();
+}
+function resize(){if(!renderer)return;var host=$('view');camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight);}
+function makeCubelet(x,y,z,stickers){
+ var g=new THREE.Group();g.position.set(x,y,z);
+ var body=new THREE.Mesh(new THREE.BoxGeometry(.96,.96,.96),new THREE.MeshStandardMaterial({color:0x090d13,roughness:.56,metalness:.08}));
+ g.add(body);
+ var black=new THREE.MeshStandardMaterial({color:0x090d13,roughness:.65});
+ var planes=[
+  {n:[0,1,0],p:[0,.486,0]},{n:[0,-1,0],p:[0,-.486,0]},
+  {n:[0,0,1],p:[0,0,.486]},{n:[0,0,-1],p:[0,0,-.486]},
+  {n:[1,0,0],p:[.486,0,0]},{n:[-1,0,0],p:[-.486,0,0]}
+ ];
+ planes.forEach(function(f){
+  var mat=black;
+  var key=f.n[0]===1?'R':f.n[0]===-1?'L':f.n[1]===1?'U':f.n[1]===-1?'D':f.n[2]===1?'F':'B';
+  var color=stickers[key];
+  if(color!==undefined)mat=new THREE.MeshStandardMaterial({color:color,roughness:.48,metalness:.02});
+  var plane=new THREE.Mesh(new THREE.PlaneGeometry(.84,.84),mat);
+  plane.position.set(f.p[0],f.p[1],f.p[2]);plane.quaternion.copy(stickerBasis(f.n));g.add(plane);
+  if(color!==undefined)stickerMeshes.push(plane);
+ });
+ return g;
+}
+function drawCube(){
+ if(!root)return;
+ while(root.children.length){var obj=root.children.pop();root.remove(obj);if(obj.geometry)obj.geometry.dispose();}
+ cubelets=[];stickerMeshes=[];
+ var s=cube.asString();
+ var stickersByPos={};
+ FACE_ORDER.forEach(function(face,fi){
+  for(var i=0;i<9;i++){
+   var m=faceletMap(face,i),key=m.p.join(',');
+   if(!stickersByPos[key])stickersByPos[key]={};
+   stickersByPos[key][face]=COLORS[s[fi*9+i]];
+  }
+ });
+ for(var x=-1;x<=1;x++)for(var y=-1;y<=1;y++)for(var z=-1;z<=1;z++){
+  var st=stickersByPos[[x,y,z].join(',')]||{};
+  var c=makeCubelet(x,y,z,st);root.add(c);cubelets.push(c);
+ }
+ updateStats();
+}
+function animate(){
+ requestAnimationFrame(animate);
+ if(controls)controls.update();
+ if(renderer&&scene&&camera)renderer.render(scene,camera);
+}
+function updateStats(){
+ $('progressText').textContent=cursor+' / '+solution.length;
+ $('timelineCount').textContent=cursor+' / '+solution.length;
+ $('progressBar').style.width=(solution.length?cursor/solution.length*100:0)+'%';
+ $('moveCount').textContent=solution.length?solution.length+' 步':'—';
+ $('currentMove').textContent=cursor?solution[cursor-1]:'—';
+ $('prevBtn').disabled=busy||cursor===0;
+ $('nextBtn').disabled=busy||cursor>=solution.length;
+ $('playBtn').disabled=busy||!solution.length||cursor>=solution.length;
+ var list=$('movesList');list.innerHTML='';
+ if(!solution.length){list.innerHTML='<div class="move"><span>—</span><span>点击“计算复原步骤”开始</span></div>';}
+ else solution.forEach(function(m,i){var d=document.createElement('div');d.className='move'+(i===cursor-1?' active':'');d.innerHTML='<span>'+(i+1)+'</span><span>'+m+'</span>';list.appendChild(d);});
+ var steps=$('steps');steps.innerHTML='';
+ var initial=document.createElement('div');initial.className='step'+(cursor===0?' active':'');initial.innerHTML='初始状态<strong>↻</strong><span>打乱后</span>';steps.appendChild(initial);
+ solution.forEach(function(m,i){var d=document.createElement('div');d.className='step'+(cursor===i+1?' active':'');d.innerHTML='第 '+(i+1)+' 步<strong>'+m+'</strong><span>'+(i+1===solution.length?'复原':'执行转动')+'</span>';steps.appendChild(d);});
+}
+function axisAndLayer(move){
+ var f=move[0],axis,coord,angle;
+ if(f==='R'){axis=new THREE.Vector3(1,0,0);coord=0;angle=-Math.PI/2;}
+ if(f==='L'){axis=new THREE.Vector3(1,0,0);coord=0;angle=Math.PI/2;}
+ if(f==='U'){axis=new THREE.Vector3(0,1,0);coord=1;angle=-Math.PI/2;}
+ if(f==='D'){axis=new THREE.Vector3(0,1,0);coord=1;angle=Math.PI/2;}
+ if(f==='F'){axis=new THREE.Vector3(0,0,1);coord=2;angle=-Math.PI/2;}
+ if(f==='B'){axis=new THREE.Vector3(0,0,1);coord=2;angle=Math.PI/2;}
+ if(move.indexOf("'")>=0)angle*=-1;
+ if(move.indexOf('2')>=0)angle*=2;
+ var layer=(f==='R'||f==='U'||f==='F')?1:-1;
+ return {axis:axis,coord:coord,angle:angle,layer:layer,face:f};
+}
+function turn(move,after){
+ if(busy)return Promise.resolve(false);
+ busy=true;stopAuto();updateStats();status('正在执行 '+move+' …');
+ var cfg=axisAndLayer(move),selected=cubelets.filter(function(c){return Math.round(c.position.getComponent(cfg.coord))===cfg.layer;});
+ layerGroup=new THREE.Group();root.add(layerGroup);
+ selected.forEach(function(c){root.remove(c);layerGroup.add(c);});
+ var start=performance.now(),duration=ANIM_MS*Math.max(1,Math.abs(cfg.angle)/(Math.PI/2));
+ return new Promise(function(resolve){
+  function tick(now){
+   var t=Math.min(1,(now-start)/duration),ease=1-Math.pow(1-t,3);
+   layerGroup.rotation.set(0,0,0);layerGroup.rotateOnAxis(cfg.axis,cfg.angle*ease);
+   if(t<1){requestAnimationFrame(tick);return;}
+   layerGroup.updateMatrixWorld(true);
+   selected.forEach(function(c){
+    c.position.applyAxisAngle(cfg.axis,cfg.angle);
+    c.position.set(Math.round(c.position.x),Math.round(c.position.y),Math.round(c.position.z));
+    c.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(cfg.axis,cfg.angle));
+    layerGroup.remove(c);root.add(c);
+   });
+   root.remove(layerGroup);layerGroup=null;
+   cube.move(move);
+   drawCube();
+   busy=false;
+   if(after)after();
+   resolve(true);
+  }
+  requestAnimationFrame(tick);
+ });
+}
+function stopAuto(){if(autoplay!==null){clearTimeout(autoplay);autoplay=null;}}
+async function nextStep(){
+ if(busy||cursor>=solution.length)return;
+ var m=solution[cursor];await turn(m,function(){cursor++;updateStats();});
+ if(cursor===solution.length){if(cube.isSolved()){status('复原完成！已验证魔方处于还原状态。','ok');$('resultLine').textContent='✓ 已成功复原';}else status('步骤执行完毕，但状态验证未通过。','error');}
+ else status('已执行 '+m+'。','ok');
+}
+async function prevStep(){
+ if(busy||cursor<=0)return;
+ var m=solution[cursor-1],inv=inverse(m);await turn(inv,function(){cursor--;updateStats();});status('已回退一步（'+inv+'）。','ok');
+}
+function inverse(m){if(m.indexOf('2')>=0)return m[0]+'2';return m.indexOf("'")>=0?m[0]:m[0]+"'";}
+async function play(){if(busy||!solution.length)return;while(cursor<solution.length){if(autoplay===null&&$('playBtn').dataset.stop==='1')break;await nextStep();if(cursor<solution.length)await new Promise(function(resolve){autoplay=setTimeout(function(){autoplay=null;resolve();},Math.max(80,Number($('speed').value)));});}}
+function reset(){stopAuto();if(busy)return;cube=new Cube();solution=[];cursor=0;history=[];drawCube();updateStats();$('resultLine').textContent='等待求解';status('已复位到完整还原状态。','ok');}
+function scramble(){
+ if(busy)return;stopAuto();var moves=[],prev='';
+ for(var i=0;i<22;i++){var f=FACE_ORDER[Math.floor(Math.random()*6)];while(f===prev)f=FACE_ORDER[Math.floor(Math.random()*6)];prev=f;var suffix=['',"'",'2'][Math.floor(Math.random()*3)];moves.push(f+suffix);}
+ cube=new Cube();moves.forEach(function(m){cube.move(m);});solution=[];cursor=0;history=[];drawCube();updateStats();$('resultLine').textContent='已打乱，等待求解';status('已生成 22 步随机打乱。','ok');
+}
+function solve(){
+ if(busy)return;stopAuto();
+ if(cube.isSolved()){solution=[];cursor=0;updateStats();$('resultLine').textContent='✓ 当前已复原';status('魔方已经处于还原状态。','ok');return;}
+ if(typeof Cube==='undefined'){status('求解器脚本未加载，请检查网络连接。','error');return;}
+ $('solveBtn').disabled=true;$('resultLine').textContent='正在搜索……';status('初始化查找表并搜索解法，首次运行可能需要几秒钟。');
+ setTimeout(function(){
+  try{
+   if(!solverReady){Cube.initSolver();solverReady=true;}
+   var copy=new Cube(cube.asString()),answer=copy.solve();
+   solution=answer.trim()?answer.trim().split(/\s+/):[];cursor=0;
+   var check=new Cube(cube.asString());solution.forEach(function(m){check.move(m);});
+   if(!check.isSolved())throw new Error('求解器输出未通过复原验证');
+   $('resultLine').textContent='✓ 已找到可验证解法';updateStats();status('求解成功：'+solution.length+' 步。点击“下一步”或“自动播放”。','ok');
+  }catch(e){solution=[];cursor=0;updateStats();$('resultLine').textContent='求解失败';status('求解错误：'+e.message,'error');}
+  finally{$('solveBtn').disabled=false;}
+ },40);
+}
+function importState(){
+ if(busy)return;var value=$('stateInput').value.trim().toUpperCase();
+ if(!/^[URFDLB]{54}$/.test(value)){status('请输入恰好 54 个 U/R/F/D/L/B 字符。','error');return;}
+ try{
+  var parsed=Cube.fromString(value);
+  if(parsed.asString()!==value)throw new Error('状态编码不一致');
+  var counts={};value.split('').forEach(function(c){counts[c]=(counts[c]||0)+1;});
+  if(FACE_ORDER.some(function(f){return counts[f]!==9;}))throw new Error('每种面标记必须恰好出现 9 次');
+  stopAuto();cube=parsed;solution=[];cursor=0;history=[];drawCube();updateStats();$('resultLine').textContent='状态已导入';status('已导入状态。求解器会在搜索时检查状态是否可解。','ok');
+ }catch(e){status('导入失败：'+e.message,'error');}
+}
+function copyState(){
+ var value=cube.asString();$('stateInput').value=value;
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(value).then(function(){status('当前 54 字符状态已复制。','ok');}).catch(function(){status('状态已放入输入框，请手动复制。');});
+ else{ $('stateInput').focus();$('stateInput').select();status('状态已放入输入框，请手动复制。');}
+}
+function undo(){
+ if(busy||!history.length)return;stopAuto();cube=new Cube(history.pop());solution=[];cursor=0;drawCube();updateStats();status('已撤销最后一次手动转动。','ok');
+}
+document.querySelectorAll('[data-move]').forEach(function(b){b.addEventListener('click',async function(){if(busy)return;history.push(cube.asString());solution=[];cursor=0;await turn(b.dataset.move,function(){updateStats();});$('resultLine').textContent='状态已改变';status('已执行 '+b.dataset.move+'。','ok');});});
+$('scrambleBtn').addEventListener('click',scramble);$('resetBtn').addEventListener('click',reset);$('solveBtn').addEventListener('click',solve);
+$('nextBtn').addEventListener('click',nextStep);$('prevBtn').addEventListener('click',prevStep);
+$('playBtn').addEventListener('click',function(){stopAuto();play();});$('stopBtn').addEventListener('click',function(){stopAuto();$('playBtn').dataset.stop='1';status('自动播放已暂停。');});
+$('speed').addEventListener('input',function(){$('speedLabel').textContent=this.value;ANIM_MS=Number(this.value);});
+$('importBtn').addEventListener('click',importState);$('copyBtn').addEventListener('click',copyState);$('undoBtn').addEventListener('click',undo);
+if(typeof THREE==='undefined'||typeof THREE.OrbitControls==='undefined'){status('Three.js 或视角控制脚本加载失败，请检查网络连接。','error');}
+else{init3D();status('3D 魔方已就绪。拖动可旋转视角，滚轮可缩放。','ok');}
+if(typeof Cube==='undefined'){status('魔方求解库未加载，请检查网络连接。','error');}
+else $('solveBtn').disabled=false;
+})();
+</script>
+</body>
+</html>
