@@ -40,7 +40,7 @@
 var $=function(id){return document.getElementById(id);};
 var COLORS={U:0xf4f6f8,R:0xe52f36,F:0x20bd76,D:0xffd52b,L:0xff8c24,B:0x176bdb};
 var FACE_ORDER=['U','R','F','D','L','B'];
-var cube=new Cube(), solution=[], cursor=0, history=[], busy=false, autoplay=null, solverReady=false;
+var cube=new Cube(), solution=[], cursor=0, history=[], busy=false, autoplay=null, playing=false, solverReady=false;
 var scene,camera,renderer,controls,root,layerGroup,raycaster,mouse;
 var cubelets=[], stickerMeshes=[];
 var ANIM_MS=360;
@@ -109,7 +109,7 @@ function makeCubelet(x,y,z,stickers){
 }
 function drawCube(){
  if(!root)return;
- while(root.children.length){var obj=root.children.pop();root.remove(obj);if(obj.geometry)obj.geometry.dispose();}
+ while(root.children.length){var obj=root.children[0];root.remove(obj);if(obj.geometry)obj.geometry.dispose();if(obj.material){if(Array.isArray(obj.material))obj.material.forEach(function(m){m.dispose();});else obj.material.dispose();}}
  cubelets=[];stickerMeshes=[];
  var s=cube.asString();
  var stickersByPos={};
@@ -189,7 +189,7 @@ function turn(move,after){
   requestAnimationFrame(tick);
  });
 }
-function stopAuto(){if(autoplay!==null){clearTimeout(autoplay);autoplay=null;}}
+function stopAuto(){playing=false;if(autoplay!==null){clearTimeout(autoplay);autoplay=null;}$('playBtn').textContent='▶ 自动播放';}
 async function nextStep(){
  if(busy||cursor>=solution.length)return;
  var m=solution[cursor];await turn(m,function(){cursor++;updateStats();});
@@ -201,7 +201,8 @@ async function prevStep(){
  var m=solution[cursor-1],inv=inverse(m);await turn(inv,function(){cursor--;updateStats();});status('已回退一步（'+inv+'）。','ok');
 }
 function inverse(m){if(m.indexOf('2')>=0)return m[0]+'2';return m.indexOf("'")>=0?m[0]:m[0]+"'";}
-async function play(){if(busy||!solution.length)return;while(cursor<solution.length){if(autoplay===null&&$('playBtn').dataset.stop==='1')break;await nextStep();if(cursor<solution.length)await new Promise(function(resolve){autoplay=setTimeout(function(){autoplay=null;resolve();},Math.max(80,Number($('speed').value)));});}}
+async function play(){if(busy||!solution.length||playing)return;playing=true;$('playBtn').textContent='▶ 播放中';schedulePlay();}
+async function schedulePlay(){if(!playing||busy)return;if(cursor>=solution.length){stopAuto();return;}await nextStep();if(!playing)return;if(cursor>=solution.length){stopAuto();return;}autoplay=setTimeout(function(){autoplay=null;schedulePlay();},Math.max(80,Number($('speed').value)));}
 function reset(){stopAuto();if(busy)return;cube=new Cube();solution=[];cursor=0;history=[];drawCube();updateStats();$('resultLine').textContent='等待求解';status('已复位到完整还原状态。','ok');}
 function scramble(){
  if(busy)return;stopAuto();var moves=[],prev='';
@@ -216,9 +217,9 @@ function solve(){
  setTimeout(function(){
   try{
    if(!solverReady){Cube.initSolver();solverReady=true;}
-   var copy=new Cube(cube.asString()),answer=copy.solve();
+   var copy=Cube.fromString(cube.asString()),answer=copy.solve();
    solution=answer.trim()?answer.trim().split(/\s+/):[];cursor=0;
-   var check=new Cube(cube.asString());solution.forEach(function(m){check.move(m);});
+   var check=Cube.fromString(cube.asString());solution.forEach(function(m){check.move(m);});
    if(!check.isSolved())throw new Error('求解器输出未通过复原验证');
    $('resultLine').textContent='✓ 已找到可验证解法';updateStats();status('求解成功：'+solution.length+' 步。点击“下一步”或“自动播放”。','ok');
   }catch(e){solution=[];cursor=0;updateStats();$('resultLine').textContent='求解失败';status('求解错误：'+e.message,'error');}
@@ -242,12 +243,12 @@ function copyState(){
  else{ $('stateInput').focus();$('stateInput').select();status('状态已放入输入框，请手动复制。');}
 }
 function undo(){
- if(busy||!history.length)return;stopAuto();cube=new Cube(history.pop());solution=[];cursor=0;drawCube();updateStats();status('已撤销最后一次手动转动。','ok');
+ if(busy||!history.length)return;stopAuto();cube=Cube.fromString(history.pop());solution=[];cursor=0;drawCube();updateStats();status('已撤销最后一次手动转动。','ok');
 }
 document.querySelectorAll('[data-move]').forEach(function(b){b.addEventListener('click',async function(){if(busy)return;history.push(cube.asString());solution=[];cursor=0;await turn(b.dataset.move,function(){updateStats();});$('resultLine').textContent='状态已改变';status('已执行 '+b.dataset.move+'。','ok');});});
 $('scrambleBtn').addEventListener('click',scramble);$('resetBtn').addEventListener('click',reset);$('solveBtn').addEventListener('click',solve);
 $('nextBtn').addEventListener('click',nextStep);$('prevBtn').addEventListener('click',prevStep);
-$('playBtn').addEventListener('click',function(){stopAuto();play();});$('stopBtn').addEventListener('click',function(){stopAuto();$('playBtn').dataset.stop='1';status('自动播放已暂停。');});
+$('playBtn').addEventListener('click',function(){play();});$('stopBtn').addEventListener('click',function(){stopAuto();status('自动播放已暂停。');});
 $('speed').addEventListener('input',function(){$('speedLabel').textContent=this.value;ANIM_MS=Number(this.value);});
 $('importBtn').addEventListener('click',importState);$('copyBtn').addEventListener('click',copyState);$('undoBtn').addEventListener('click',undo);
 if(typeof THREE==='undefined'||typeof THREE.OrbitControls==='undefined'){status('Three.js 或视角控制脚本加载失败，请检查网络连接。','error');}
