@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>沟槽反光模拟 · Thomas Young</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden;
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    background: #05070d; color: #dbe4ee; }
+  #app { display: flex; height: 100vh; }
+
+  .panel { width: 320px; padding: 16px; background: #0b1220;
+    border-right: 1px solid #1c2740; overflow-y: auto; flex-shrink: 0; }
+  .panel h1 { font-size: 14px; color: #7dd3fc; margin-bottom: 4px; }
+  .panel .sub { font-size: 11px; color: #64748b; margin-bottom: 14px;
+    line-height: 1.5; }
+  .panel h3 { font-size: 11px; letter-spacing: 1.5px; color: #94a3b8;
+    margin: 16px 0 8px; text-transform: uppercase;
+    border-bottom: 1px solid #1c2740; padding-bottom: 4px; }
+  .row { margin-bottom: 9px; }
+  .row label { display: flex; justify-content: space-between;
+    font-size: 12px; margin-bottom: 3px; color: #cbd5e1; }
+  .row label span { color: #4ade80;
+    font-family: ui-monospace, monospace; }
+  input[type=range] { width: 100%; accent-color: #4ade80; height: 4px; }
+  select { width: 100%; padding: 6px 8px; background: #16213a;
+    color: #dbe4ee; border: 1px solid #26354f; border-radius: 5px;
+    font-size: 12px; font-family: inherit; }
+  button { width: 100%; padding: 7px; background: #16213a;
+    color: #dbe4ee; border: 1px solid #26354f; border-radius: 5px;
+    font-size: 12px; cursor: pointer; margin-top: 5px;
+    font-family: inherit; }
+  button:hover { border-color: #4ade80; color: #4ade80; }
+  .tip { font-size: 11px; color: #94a3b8; line-height: 1.6;
+    background: #0f1a2e; border-left: 3px solid #4ade80;
+    padding: 8px 10px; border-radius: 4px; margin-top: 8px; }
+
+  .stage { flex: 1; position: relative; overflow: hidden; }
+  canvas { display: block; position: absolute; inset: 0;
+    width: 100%; height: 100%; }
+  .hud { position: absolute; top: 14px; left: 18px;
+    font-size: 11px; color: #64748b;
+    font-family: ui-monospace, monospace; line-height: 1.6;
+    pointer-events: none; }
+  .legend { position: absolute; bottom: 14px; right: 18px;
+    font-size: 11px; color: #64748b; text-align: right;
+    font-family: ui-monospace, monospace; line-height: 1.7;
+    pointer-events: none; }
+  @media (max-width: 700px) {
+    html, body { overflow: auto; }
+    #app { flex-direction: column; height: 100dvh; min-height: 560px; }
+    .panel { width: 100%; height: 42dvh; min-height: 230px; border-right: 0;
+      border-bottom: 1px solid #1c2740; }
+    .stage { flex: 1; min-height: 300px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="panel">
+    <a href="play.html" style="display:inline-block;color:#7dd3fc;margin-bottom:12px;font-size:12px">← 返回趣味实验室</a>
+    <h1>沟槽金属盘 · 3D 成像模拟</h1>
+    <div class="sub">同一套几何驻相模型：可切换同心圆沟槽与平行直线沟槽</div>
+
+    <h3>光源</h3>
+    <div class="row">
+      <label>类型</label>
+      <select id="srcType">
+        <option value="parallel">平行光</option>
+        <option value="point">点光源</option>
+      </select>
+    </div>
+    <div id="parallelCtrl">
+      <div class="row"><label>入射角 i <span id="v-inc">30°</span></label>
+        <input type="range" id="inc" min="0" max="85" step="1" value="30"></div>
+      <div class="row"><label>方位角 φ <span id="v-azi">0°</span></label>
+        <input type="range" id="azi" min="0" max="360" step="5" value="0"></div>
+    </div>
+    <div id="pointCtrl" style="display:none">
+      <div class="row"><label>S_x <span id="v-sx">0</span></label>
+        <input type="range" id="sx" min="-80" max="80" step="1" value="0"></div>
+      <div class="row"><label>S_y <span id="v-sy">0</span></label>
+        <input type="range" id="sy" min="-80" max="80" step="1" value="0"></div>
+      <div class="row"><label>S_z <span id="v-sz">50</span></label>
+        <input type="range" id="sz" min="5" max="150" step="1" value="50"></div>
+    </div>
+
+    <h3>眼睛 E</h3>
+    <div class="row"><label>X_e <span id="v-ex">0</span></label>
+      <input type="range" id="ex" min="-80" max="80" step="1" value="0"></div>
+    <div class="row"><label>Y_e <span id="v-ey">-20</span></label>
+      <input type="range" id="ey" min="-80" max="80" step="1" value="-20"></div>
+    <div class="row"><label>Z_e <span id="v-ez">30</span></label>
+      <input type="range" id="ez" min="5" max="150" step="1" value="30"></div>
+
+    <h3>沟槽几何</h3>
+    <div class="row"><label>沟槽类型</label>
+      <select id="grooveMode">
+        <option value="rings">同心圆沟槽</option>
+        <option value="lines">平行直线沟槽</option>
+      </select>
+    </div>
+    <div class="row" id="lineAngleRow"><label>直线方向 α <span id="v-lineAngle">0°</span></label>
+      <input type="range" id="lineAngle" min="0" max="180" step="1" value="0"></div>
+    <div class="row"><label>沟槽数量 <span id="v-num">30</span></label>
+      <input type="range" id="num" min="3" max="100" step="1" value="30"></div>
+    <div class="row" id="rminRow"><label>内半径 <span id="v-rmin">3</span></label>
+      <input type="range" id="rmin" min="1" max="30" step="1" value="3"></div>
+    <div class="row"><label>外半径 <span id="v-rmax">30</span></label>
+      <input type="range" id="rmax" min="5" max="60" step="1" value="30"></div>
+
+    <h3>预设</h3>
+    <button data-preset="oblique">① 斜射斜视</button>
+    <button data-preset="vertical">② 垂直入射</button>
+    <button data-preset="grazing">③ 掠入射</button>
+    <button data-preset="pointSrc">④ 点光源</button>
+    <button data-preset="reset">⑤ 复位视角</button>
+
+    <div class="tip">
+      <b style="color:#7dd3fc">模型说明：</b><br>
+      同心圆沟槽保留在圆盘上，默认增加到 30 条（可调至 100 条）；平行直线沟槽改为限制在独立的矩形基片内，直线方向 α 在基片平面内测量。当前是几何驻相可视化，不等同于包含真实沟槽截面、遮挡和波动衍射的完整光学渲染。
+    </div>
+  </aside>
+
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="hud" id="hud">加载中…</div>
+    <div class="legend">
+      拖动旋转 · 滚轮缩放 · 双击复位<br>
+      <span style="color:#fbbf24">●</span> 光源
+      <span style="color:#38bdf8">●</span> 眼睛
+      <span style="color:#fde68a">●</span> 亮斑
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   向量工具
+   ============================================================ */
+const v3 = {
+  sub: (a,b) => ({x:a.x-b.x, y:a.y-b.y, z:a.z-b.z}),
+  dot: (a,b) => a.x*b.x + a.y*b.y + a.z*b.z,
+  cross: (a,b) => ({
+    x: a.y*b.z - a.z*b.y,
+    y: a.z*b.x - a.x*b.z,
+    z: a.x*b.y - a.y*b.x
+  }),
+  len: a => Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z),
+  norm: a => {
+    const l = v3.len(a) || 1e-9;
+    return {x:a.x/l, y:a.y/l, z:a.z/l};
+  }
+};
+
+/* ============================================================
+   全局状态
+   ============================================================ */
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 900, H = 700;
+
+const state = {
+  srcType: 'parallel',
+  inc: 30, azi: 0,
+  S: {x: 0, y: 0, z: 50},
+  E: {x: 0, y: -20, z: 30},
+  num: 30, rmin: 3, rmax: 30, grooveMode: 'rings', lineAngle: 0
+};
+
+const cam = {
+  theta: Math.PI * 0.9,      // 方位角
+  phi:   Math.PI * 0.30,     // 极角（0=俯视, π/2=平视）
+  dist:  140,
+  target: {x:0, y:0, z:0}
+};
+
+/* ============================================================
+   画布尺寸
+   ============================================================ */
+function resizeCanvas() {
+  let cssW = cv.clientWidth;
+  let cssH = cv.clientHeight;
+  if (!cssW || cssW < 1) cssW = window.innerWidth;
+  if (!cssH || cssH < 1) cssH = window.innerHeight;
+  cssW = Math.max(cssW, 1);
+  cssH = Math.max(cssH, 1);
+
+  const dpr = window.devicePixelRatio || 1;
+  cv.width  = Math.round(cssW * dpr);
+  cv.height = Math.round(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  W = cssW;
+  H = cssH;
+}
+
+/* ============================================================
+   相机与投影
+   ============================================================ */
+function camPos() {
+  const sp = Math.sin(cam.phi);
+  const cp = Math.cos(cam.phi);
+  return {
+    x: cam.target.x + cam.dist * sp * Math.cos(cam.theta),
+    y: cam.target.y + cam.dist * sp * Math.sin(cam.theta),
+    z: cam.target.z + cam.dist * cp
+  };
+}
+
+function makeProjector() {
+  const cp = camPos();
+  const fwd = v3.norm(v3.sub(cam.target, cp));
+  let right = v3.cross(fwd, {x:0, y:0, z:1});
+  if (v3.len(right) < 1e-6) right = {x:1, y:0, z:0};
+  right = v3.norm(right);
+  const up = v3.cross(right, fwd);
+  const F = Math.min(W, H) * 1.15;
+
+  return (p) => {
+    const rel = v3.sub(p, cp);
+    const cx = v3.dot(rel, right);
+    const cy = v3.dot(rel, up);
+    const cz = v3.dot(rel, fwd);
+    if (cz < 1) return null;
+    return {
+      x: W/2 + (cx / cz) * F,
+      y: H/2 - (cy / cz) * F,
+      depth: cz
+    };
+  };
+}
+
+/* ============================================================
+   物理：某半径 R 上的亮点
+   ------------------------------------------------------------
+   沿圆周切向的驻相条件 f(θ) = di·ŝ − dr·ŝ = 0（不是完整的二维镜面反射条件）
+   ŝ = (−sinθ, cosθ, 0)
+   ============================================================ */
+function solveRing(R, diFn, E, N) {
+  N = N || 720;
+  const FULL_RING_EPS = 1e-7;
+  const ROOT_EPS = 1e-8;
+  const STEP = 2 * Math.PI / N;
+
+  const f = (theta) => {
+    const c = Math.cos(theta), s = Math.sin(theta);
+    const Q = {x: R * c, y: R * s, z: 0};
+    const di = diFn(Q); // incident propagation direction: source -> surface
+    const dx = E.x - Q.x, dy = E.y - Q.y, dz = E.z - Q.z;
+    const dLen = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1e-9;
+    const drS = (dx * (-s) + dy * c) / dLen;
+    const diS = di.x * (-s) + di.y * c;
+    return diS - drS;
+  };
+
+  const fs = new Array(N);
+  let maxAbs = 0;
+  for (let k = 0; k < N; k++) {
+    fs[k] = f(k * STEP);
+    maxAbs = Math.max(maxAbs, Math.abs(fs[k]));
+  }
+
+  // A ring is fully bright only when the condition holds around the whole ring.
+  if (maxAbs < FULL_RING_EPS) return { fullRing: true, spots: [] };
+
+  const roots = [];
+  const addRoot = theta => {
+    theta = ((theta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    if (!roots.some(t => Math.abs(Math.atan2(Math.sin(t-theta), Math.cos(t-theta))) < 1e-5))
+      roots.push(theta);
+  };
+
+  for (let k = 0; k < N; k++) {
+    const k1 = (k + 1) % N;
+    const a = fs[k], b = fs[k1];
+    const lo0 = k * STEP;
+    // Catch roots that land exactly on a sampling point (strict sign-change tests miss these).
+    if (Math.abs(a) < ROOT_EPS) addRoot(lo0);
+    if (a * b < 0) {
+      let lo = lo0;
+      let hi = (k + 1) * STEP;
+      let flo = a;
+      for (let it = 0; it < 40; it++) {
+        const mid = 0.5 * (lo + hi);
+        const fm = f(mid);
+        if (Math.abs(fm) < 1e-13) { lo = hi = mid; break; }
+        if (flo * fm <= 0) hi = mid;
+        else { lo = mid; flo = fm; }
+      }
+      addRoot(0.5 * (lo + hi));
+    }
+  }
+
+  const spots = roots.map(th => ({
+    x: R * Math.cos(th), y: R * Math.sin(th), z: 0
+  }));
+  return { fullRing: false, spots };
+}
+
+/* ============================================================
+   直线沟槽：Q(t)=t*u+b*n，u 为沟槽切向单位向量
+   求解 f(t)=(di-dr)·u=0；这是沿直线方向的驻相条件。
+   ============================================================ */
+function solveLine(b, halfLen, u, n, diFn, E, N=900) {
+  const f = t => {
+    const Q = {x:t*u.x + b*n.x, y:t*u.y + b*n.y, z:0};
+    const di = diFn(Q);
+    const dx = E.x-Q.x, dy = E.y-Q.y, dz = E.z-Q.z;
+    const len = Math.hypot(dx,dy,dz) || 1e-9;
+    const dr = {x:dx/len, y:dy/len, z:dz/len};
+    return (di.x-dr.x)*u.x + (di.y-dr.y)*u.y + (di.z-dr.z)*u.z;
+  };
+  const step = 2*halfLen/N, vals = [];
+  let maxAbs = 0;
+  for (let k=0;k<=N;k++) { vals[k]=f(-halfLen+k*step); maxAbs=Math.max(maxAbs,Math.abs(vals[k])); }
+  if (maxAbs < 1e-7) return {fullLine:true, spots:[]};
+  const roots=[];
+  const add = t => {
+    if (t < -halfLen-1e-6 || t > halfLen+1e-6) return;
+    if (!roots.some(q=>Math.abs(q-t)<1e-4)) roots.push(t);
+  };
+  for (let k=0;k<N;k++) {
+    let a=vals[k], bb=vals[k+1];
+    let lo=-halfLen+k*step, hi=lo+step;
+    if (Math.abs(a)<1e-8) add(lo);
+    if (a*bb<0) {
+      let flo=a;
+      for(let it=0;it<42;it++) {
+        const mid=(lo+hi)/2, fm=f(mid);
+        if (Math.abs(fm)<1e-13) {lo=hi=mid;break;}
+        if(flo*fm<=0) hi=mid; else {lo=mid;flo=fm;}
+      }
+      add((lo+hi)/2);
+    }
+  }
+  return {fullLine:false, spots:roots.map(t=>({x:t*u.x+b*n.x,y:t*u.y+b*n.y,z:0}))};
+}
+
+/* ============================================================
+   计算所有沟槽
+   ============================================================ */
+function computeGrooves() {
+  const isPoint = state.srcType === 'point';
+
+  let diConst = null;
+  if (!isPoint) {
+    const i = state.inc * Math.PI / 180;
+    const phi = state.azi * Math.PI / 180;
+    diConst = v3.norm({
+      x:  Math.sin(i) * Math.sin(phi),
+      y: -Math.sin(i) * Math.cos(phi),
+      z: -Math.cos(i)
+    });
+  }
+
+  const diFn = isPoint
+    ? (Q) => {
+        // Direction of propagation is from the source S toward the surface point Q.
+        const d = v3.sub(Q, state.S);
+        const l = v3.len(d) || 1e-9;
+        return {x:d.x/l, y:d.y/l, z:d.z/l};
+      }
+    : () => diConst;
+
+  const grooves = [];
+  const count = state.num;
+  if (state.grooveMode === 'lines') {
+    const a = state.lineAngle * Math.PI / 180;
+    const u = {x:Math.cos(a), y:Math.sin(a), z:0};
+    const nvec = {x:-Math.sin(a), y:Math.cos(a), z:0};
+    // 直线沟槽所在的独立矩形基片。半宽、半高随外半径缩放。
+    const halfW = state.rmax * 1.25;
+    const halfH = state.rmax * 0.85;
+    // 矩形沿法向 n 的最大投影，确保最外侧沟槽仍能碰到矩形边界。
+    const bMax = Math.abs(nvec.x)*halfW + Math.abs(nvec.y)*halfH;
+    for (let k=0;k<count;k++) {
+      const b = count===1 ? 0 : -bMax + 2*bMax*k/(count-1);
+      // 求直线 Q(t)=t*u+b*n 与矩形边界的交点；矩形中心对称，区间为 [-halfLen, halfLen]。
+      let halfLen = Infinity;
+      for (const [ui, ni, bound] of [[u.x,nvec.x,halfW],[u.y,nvec.y,halfH]]) {
+        const offset = b*ni;
+        if (Math.abs(ui) < 1e-10) {
+          if (Math.abs(offset) > bound + 1e-8) halfLen = 0;
+        } else {
+          halfLen = Math.min(halfLen, Math.max(0, (bound - Math.abs(offset))/Math.abs(ui)));
+        }
+      }
+      if (!Number.isFinite(halfLen)) halfLen = 0;
+      const res = solveLine(b, halfLen, u, nvec, diFn, state.E);
+      grooves.push({type:'line', b, halfLen, u, n:nvec, fullLine:res.fullLine, spots:res.spots});
+    }
+  } else {
+    for (let k = 0; k < count; k++) {
+      const t = count === 1 ? 0.5 : k / (count - 1);
+      const R = state.rmin + (state.rmax - state.rmin) * t;
+      const res = solveRing(R, diFn, state.E);
+      grooves.push({type:'ring', R, fullRing: res.fullRing, spots: res.spots});
+    }
+  }
+  return { grooves, diConst };
+}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+function render() {
+  if (W < 10 || H < 10) return;
+
+  // 背景
+  const bg = ctx.createRadialGradient(W/2, H*0.45, 0,
+                                       W/2, H*0.45, Math.max(W,H)*0.7);
+  bg.addColorStop(0, '#0e1729');
+  bg.addColorStop(1, '#03050a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const proj = makeProjector();
+  if (!proj) return;
+
+  const { grooves } = computeGrooves();
+  const diskR = state.rmax * 1.15;
+  const rectHalfW = state.rmax * 1.25;
+  const rectHalfH = state.rmax * 0.85;
+
+  /* ---- 基片：圆环模式用圆盘；直线模式用独立矩形 ---- */
+  const surfacePts = [];
+  if (state.grooveMode === 'lines') {
+    const corners = [
+      {x:-rectHalfW,y:-rectHalfH,z:0}, {x:rectHalfW,y:-rectHalfH,z:0},
+      {x:rectHalfW,y:rectHalfH,z:0}, {x:-rectHalfW,y:rectHalfH,z:0}
+    ];
+    for (const q of corners) { const p=proj(q); if(p) surfacePts.push(p); }
+  } else {
+    for (let k = 0; k <= 96; k++) {
+      const t = k / 96 * Math.PI * 2;
+      const p = proj({x: diskR * Math.cos(t), y: diskR * Math.sin(t), z: 0});
+      if (p) surfacePts.push(p);
+    }
+  }
+  if (surfacePts.length > 3) {
+    const g = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(rectHalfW,rectHalfH,diskR) * 4);
+    g.addColorStop(0,   'rgba(50, 65, 88, 0.65)');
+    g.addColorStop(0.5, 'rgba(28, 38, 56, 0.55)');
+    g.addColorStop(1,   'rgba(10, 15, 25, 0.10)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(surfacePts[0].x, surfacePts[0].y);
+    for (let i = 1; i < surfacePts.length; i++) ctx.lineTo(surfacePts[i].x, surfacePts[i].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 155, 190, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  /* ---- 沟槽：圆环或平行直线 ---- */
+  for (const gr of grooves) {
+    const pts = [];
+    if (gr.type === 'ring') {
+      for (let k=0;k<=96;k++) {
+        const t=k/96*Math.PI*2;
+        const p=proj({x:gr.R*Math.cos(t),y:gr.R*Math.sin(t),z:0});
+        if(p) pts.push(p);
+      }
+    } else {
+      for (let k=0;k<=48;k++) {
+        const t=-gr.halfLen+2*gr.halfLen*k/48;
+        const p=proj({x:t*gr.u.x+gr.b*gr.n.x,y:t*gr.u.y+gr.b*gr.n.y,z:0});
+        if(p) pts.push(p);
+      }
+    }
+    if (pts.length < 2) continue;
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+    ctx.strokeStyle='rgba(60, 80, 110, 0.65)'; ctx.lineWidth=4; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+    ctx.strokeStyle='rgba(150, 175, 210, 0.8)'; ctx.lineWidth=1.2; ctx.stroke();
+  }
+
+  /* ---- 亮斑 ---- */
+  const spotsScreen = [];
+  const fullLights = [];
+  for (const gr of grooves) {
+    if ((gr.type==='ring' && gr.fullRing) || (gr.type==='line' && gr.fullLine)) fullLights.push(gr);
+    else for (const spot of gr.spots) { const p=proj(spot); if(p) spotsScreen.push(p); }
+  }
+
+  // 整条沟槽满足驻相条件时，用金色高亮整圈或整条直线
+  if (fullLights.length) {
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    for(const gr of fullLights) {
+      const pts=[];
+      if(gr.type==='ring') {
+        for(let k=0;k<=72;k++){const t=k/72*Math.PI*2;const p=proj({x:gr.R*Math.cos(t),y:gr.R*Math.sin(t),z:0});if(p)pts.push(p);}
+      } else {
+        for(let k=0;k<=48;k++){const t=-gr.halfLen+2*gr.halfLen*k/48;const p=proj({x:t*gr.u.x+gr.b*gr.n.x,y:t*gr.u.y+gr.b*gr.n.y,z:0});if(p)pts.push(p);}
+      }
+      if(pts.length<2) continue;
+      ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+      ctx.strokeStyle='rgba(255, 240, 150, 0.75)';ctx.lineWidth=4;ctx.stroke();
+      ctx.strokeStyle='rgba(255, 255, 220, 0.95)';ctx.lineWidth=1.5;ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 点状亮斑
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  spotsScreen.sort((a,b) => b.depth - a.depth);
+  for (const p of spotsScreen) {
+    const r = 10 * Math.max(0.6, 90 / p.depth);
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+    g.addColorStop(0,    'rgba(255,255,240,0.95)');
+    g.addColorStop(0.25, 'rgba(255,240,150,0.55)');
+    g.addColorStop(0.65, 'rgba(255,200,60,0.12)');
+    g.addColorStop(1,    'rgba(255,200,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // 亮点中心
+  ctx.fillStyle = 'rgba(255,255,235,0.95)';
+  for (const p of spotsScreen) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /* ---- 光源 ---- */
+  if (state.srcType === 'point') {
+    drawMarker(proj, state.S, '#fbbf24', 'S', 8);
+    const ctrP = proj({x:0, y:0, z:0});
+    const sP   = proj(state.S);
+    if (ctrP && sP) {
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
+      ctx.setLineDash([4, 5]);
+      ctx.beginPath();
+      ctx.moveTo(sP.x, sP.y);
+      ctx.lineTo(ctrP.x, ctrP.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  } else {
+    drawParallelRays(proj);
+  }
+
+  /* ---- 眼睛 ---- */
+  drawMarker(proj, state.E, '#38bdf8', 'E', 7);
+  const eyeP = proj(state.E);
+  const ctrP = proj({x:0, y:0, z:0});
+  if (eyeP && ctrP) {
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.moveTo(eyeP.x, eyeP.y);
+    ctx.lineTo(ctrP.x, ctrP.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* ---- HUD ---- */
+  const totalSpots = grooves.reduce((sum,g) => sum + g.spots.length, 0);
+  const fullCount = grooves.filter(g => g.type==='ring' ? g.fullRing : g.fullLine).length;
+  const modeName = state.grooveMode==='lines' ? '矩形基片·平行直线' : '圆盘·同心圆';
+  document.getElementById('hud').innerHTML =
+    `画布 ${W}×${H} · 视角 θ=${(cam.theta*180/Math.PI).toFixed(0)}° ` +
+    `φ=${(cam.phi*180/Math.PI).toFixed(0)}° d=${cam.dist.toFixed(0)}<br>` +
+    `${modeName}沟槽 ${grooves.length} · 驻相点 ${totalSpots} · 整条满足条件 ${fullCount}<br>` +
+    `光源: ${state.srcType === 'point' ? '点光源' : '平行光'}`;
+}
+
+/* ---- 3D 标记 ---- */
+function drawMarker(proj, pos, color, label, baseR) {
+  const p = proj(pos);
+  if (!p) return;
+  const r = baseR * Math.max(0.6, 90 / p.depth);
+
+  // 发光光晕
+  const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3);
+  g.addColorStop(0, color);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r * 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 核心
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (label) {
+    ctx.fillStyle = 'rgba(220, 235, 250, 0.9)';
+    ctx.font = '11px ui-monospace, monospace';
+    ctx.fillText(label, p.x + r + 5, p.y - r - 3);
+  }
+}
+
+/* ---- 平行光光线束 ---- */
+function drawParallelRays(proj) {
+  const i = state.inc * Math.PI / 180;
+  const phi = state.azi * Math.PI / 180;
+  const d = v3.norm({
+    x:  Math.sin(i) * Math.sin(phi),
+    y: -Math.sin(i) * Math.cos(phi),
+    z: -Math.cos(i)
+  });
+
+  // 垂直于入射方向的水平方向
+  let perp = v3.cross(d, {x:0, y:0, z:1});
+  if (v3.len(perp) < 1e-6) perp = {x:1, y:0, z:0};
+  perp = v3.norm(perp);
+
+  const offset = state.rmax * 0.5;
+
+  for (let k = -2; k <= 2; k++) {
+    const ox = perp.x * k * offset;
+    const oy = perp.y * k * offset;
+    const oz = 45;
+
+    // 起点
+    const startX = ox - d.x * 30;
+    const startY = oy - d.y * 30;
+    const startZ = oz - d.z * 30;
+
+    // 命中 z=0 平面的参数 t
+    const t = -startZ / d.z;
+    if (!isFinite(t) || t < 0) continue;
+
+    const endX = startX + d.x * t;
+    const endY = startY + d.y * t;
+
+    const a = proj({x: startX, y: startY, z: startZ});
+    const b = proj({x: endX, y: endY, z: 0});
+    if (!a || !b) continue;
+
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+
+    // 箭头
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const L = Math.hypot(dx, dy) || 1;
+    const ux = dx / L, uy = dy / L;
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - ux*10 - uy*4, b.y - uy*10 + ux*4);
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - ux*10 + uy*4, b.y - uy*10 - ux*4);
+    ctx.stroke();
+  }
+}
+
+/* ============================================================
+   UI 绑定
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const ui = {
+  srcType: $('srcType'), grooveMode: $('grooveMode'), lineAngle: $('lineAngle'),
+  inc: $('inc'), azi: $('azi'),
+  sx: $('sx'), sy: $('sy'), sz: $('sz'),
+  ex: $('ex'), ey: $('ey'), ez: $('ez'),
+  num: $('num'), rmin: $('rmin'), rmax: $('rmax')
+};
+const lbl = {
+  inc: $('v-inc'), azi: $('v-azi'), lineAngle: $('v-lineAngle'),
+  sx: $('v-sx'), sy: $('v-sy'), sz: $('v-sz'),
+  ex: $('v-ex'), ey: $('v-ey'), ez: $('v-ez'),
+  num: $('v-num'), rmin: $('v-rmin'), rmax: $('v-rmax')
+};
+
+function syncUI() {
+  state.srcType = ui.srcType.value;
+  state.grooveMode = ui.grooveMode.value;
+  state.lineAngle = +ui.lineAngle.value;
+  state.inc = +ui.inc.value;
+  state.azi = +ui.azi.value;
+  state.S = {x: +ui.sx.value, y: +ui.sy.value, z: +ui.sz.value};
+  state.E = {x: +ui.ex.value, y: +ui.ey.value, z: +ui.ez.value};
+  state.num = +ui.num.value;
+  state.rmin = +ui.rmin.value;
+  state.rmax = +ui.rmax.value;
+
+  if (state.rmin >= state.rmax) {
+    state.rmin = Math.max(1, state.rmax - 1);
+    ui.rmin.value = state.rmin;
+  }
+
+  lbl.lineAngle.textContent = state.lineAngle + '°';
+  lbl.inc.textContent  = state.inc + '°';
+  lbl.azi.textContent  = state.azi + '°';
+  lbl.sx.textContent   = state.S.x;
+  lbl.sy.textContent   = state.S.y;
+  lbl.sz.textContent   = state.S.z;
+  lbl.ex.textContent   = state.E.x;
+  lbl.ey.textContent   = state.E.y;
+  lbl.ez.textContent   = state.E.z;
+  lbl.num.textContent  = state.num;
+  lbl.rmin.textContent = state.rmin;
+  lbl.rmax.textContent = state.rmax;
+
+  $('parallelCtrl').style.display = state.srcType === 'parallel' ? '' : 'none';
+  $('pointCtrl').style.display    = state.srcType === 'point'    ? '' : 'none';
+  $('lineAngleRow').style.display = state.grooveMode === 'lines' ? '' : 'none';
+  $('rminRow').style.display = state.grooveMode === 'rings' ? '' : 'none';
+}
+
+function update() {
+  syncUI();
+  render();
+}
+
+Object.values(ui).forEach(el => {
+  el.addEventListener('input', update);
+  el.addEventListener('change', update);
+});
+
+/* ============================================================
+   预设
+   ============================================================ */
+const presets = {
+  oblique: {
+    srcType:'parallel', inc:30, azi:0,
+    E:{x:0, y:-20, z:30}
+  },
+  vertical: {
+    srcType:'parallel', inc:0, azi:0,
+    E:{x:0, y:0, z:60}
+  },
+  grazing: {
+    srcType:'parallel', inc:75, azi:30,
+    E:{x:20, y:-25, z:22}
+  },
+  pointSrc: {
+    srcType:'point',
+    S:{x:0, y:0, z:40},
+    E:{x:0, y:-20, z:30}
+  }
+};
+
+document.querySelectorAll('button[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.preset;
+    if (key === 'reset') {
+      cam.theta = Math.PI * 0.9;
+      cam.phi   = Math.PI * 0.30;
+      cam.dist  = 140;
+      render();
+      return;
+    }
+    const p = presets[key];
+    if (!p) return;
+    ui.srcType.value = p.srcType;
+    if (p.inc !== undefined) ui.inc.value = p.inc;
+    if (p.azi !== undefined) ui.azi.value = p.azi;
+    if (p.S) { ui.sx.value = p.S.x; ui.sy.value = p.S.y; ui.sz.value = p.S.z; }
+    if (p.E) { ui.ex.value = p.E.x; ui.ey.value = p.E.y; ui.ez.value = p.E.z; }
+    update();
+  });
+});
+
+/* ============================================================
+   鼠标交互
+   ============================================================ */
+let drag = null;
+cv.addEventListener('mousedown', e => {
+  drag = {x: e.clientX, y: e.clientY};
+  e.preventDefault();
+});
+window.addEventListener('mousemove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x;
+  const dy = e.clientY - drag.y;
+  cam.theta -= dx * 0.008;
+  cam.phi   -= dy * 0.008;
+  cam.phi = Math.max(0.08, Math.min(Math.PI/2 - 0.03, cam.phi));
+  drag.x = e.clientX; drag.y = e.clientY;
+  render();
+});
+window.addEventListener('mouseup', () => { drag = null; });
+
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  cam.dist *= Math.exp(e.deltaY * 0.0012);
+  cam.dist = Math.max(30, Math.min(600, cam.dist));
+  render();
+}, {passive: false});
+
+cv.addEventListener('dblclick', () => {
+  cam.theta = Math.PI * 0.9;
+  cam.phi   = Math.PI * 0.30;
+  cam.dist  = 140;
+  render();
+});
+
+/* 触摸 */
+cv.addEventListener('touchstart', e => {
+  if (e.touches.length === 1)
+    drag = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+}, {passive: true});
+cv.addEventListener('touchmove', e => {
+  if (!drag || e.touches.length !== 1) return;
+  e.preventDefault();
+  const dx = e.touches[0].clientX - drag.x;
+  const dy = e.touches[0].clientY - drag.y;
+  cam.theta -= dx * 0.008;
+  cam.phi   -= dy * 0.008;
+  cam.phi = Math.max(0.08, Math.min(Math.PI/2 - 0.03, cam.phi));
+  drag.x = e.touches[0].clientX;
+  drag.y = e.touches[0].clientY;
+  render();
+}, {passive: false});
+cv.addEventListener('touchend', () => { drag = null; });
+
+/* ============================================================
+   启动
+   ============================================================ */
+function boot() {
+  resizeCanvas();
+  update();
+  // 再迟一帧补偿布局
+  requestAnimationFrame(() => {
+    resizeCanvas();
+    render();
+  });
+}
+
+window.addEventListener('load', boot);
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  render();
+});
+
+// ResizeObserver 兜底
+if (typeof ResizeObserver !== 'undefined') {
+  const ro = new ResizeObserver(() => {
+    resizeCanvas();
+    render();
+  });
+  ro.observe(cv.parentElement);
+}
+</script>
+</body>
+</html>
