@@ -1,0 +1,13 @@
+'use strict';
+const CR3BP=(()=>{
+const D=384400, GE=398600.435507, GM=4902.800066, RE=6378.1363, RM=1737.4, mu=GM/(GE+GM), T=Math.sqrt(D**3/(GE+GM)), V=D/T;
+function initial(){const a=229.25196479*Math.PI/180,r=(RE+300)/D,v=10.852103131/V;return [-mu+r*Math.cos(a),r*Math.sin(a),0,-(v-r)*Math.sin(a),(v-r)*Math.cos(a),0];}
+function ode(s){const [x,y,z,vx,vy,vz]=s,a=((x+mu)**2+y*y+z*z)**1.5,b=((x-1+mu)**2+y*y+z*z)**1.5;return [vx,vy,vz,2*vy+x-(1-mu)*(x+mu)/a-mu*(x-1+mu)/b,-2*vx+y-(1-mu)*y/a-mu*y/b,-(1-mu)*z/a-mu*z/b];}
+function jac(s){const [x,y,z,u,v,w]=s;return x*x+y*y+2*((1-mu)/Math.hypot(x+mu,y,z)+mu/Math.hypot(x-1+mu,y,z))-u*u-v*v-w*w;}
+const A=[[],[1/5],[3/40,9/40],[44/45,-56/15,32/9],[19372/6561,-25360/2187,64448/6561,-212/729],[9017/3168,-355/33,46732/5247,49/176,-5103/18656],[35/384,0,500/1113,125/192,-2187/6784,11/84]], B=[35/384,0,500/1113,125/192,-2187/6784,11/84,0], E=[35/384-5179/57600,0,500/1113-7571/16695,125/192-393/640,-2187/6784+92097/339200,11/84-187/2100,-1/40];
+function step(s,h,tol){let k=[];for(let i=0;i<7;i++)k.push(ode(s.map((v,j)=>v+h*A[i].reduce((a,c,l)=>a+c*k[l][j],0))));const out=s.map((v,j)=>v+h*B.reduce((a,c,l)=>a+c*k[l][j],0));const err=Math.max(...s.map((v,j)=>Math.abs(h*E.reduce((a,c,l)=>a+c*k[l][j],0))/(tol+tol*Math.max(Math.abs(v),Math.abs(out[j])))));return {s:out,err};}
+function integrate(tol=1e-12,end=6.3*86400/T){let s=initial(),t=0,h=1e-5,points=[{t,s:s.slice()}],maxDrift=0,c=jac(s),rejected=0;while(t<end){h=Math.min(h,end-t,0.002);if(h<1e-14)throw Error('步长过小');const q=step(s,h,tol);if(q.err<=1){t+=h;s=q.s;points.push({t,s:s.slice()});maxDrift=Math.max(maxDrift,Math.abs(jac(s)-c));}else rejected++;h*=Math.min(4,Math.max(.15,.9*Math.pow(Math.max(q.err,1e-16),-.2)));if(points.length+rejected>200000)throw Error('积分超过步数限制');}return {points,c,maxDrift,rejected,tol};}
+function radial(s,body){return (s[0]-(body===1?1-mu:-mu))*s[3]+s[1]*s[4]+s[2]*s[5];}
+function events(result){let out=[];for(let body of [1,0]){let p=result.points;for(let i=1;i<p.length;i++){if(body===0&&p[i].t*T/86400<4)continue;if(radial(p[i-1].s,body)<0&&radial(p[i].s,body)>=0){let lo=0,hi=p[i].t-p[i-1].t,base=p[i-1];for(let n=0;n<42;n++){let m=(lo+hi)/2,s=step(base.s,m,result.tol).s;if(radial(s,body)<0)lo=m;else hi=m;}let dt=(lo+hi)/2,s=step(base.s,dt,result.tol).s;out.push({body,t:(base.t+dt)*T/86400,h:Math.hypot(s[0]-(body===1?1-mu:-mu),s[1],s[2])*D-(body===1?RM:RE),s});break;}}}return out;}
+return {D,GE,GM,RE,RM,mu,T,V,initial,ode,jac,step,integrate,events};})();
+if(typeof module!=='undefined')module.exports=CR3BP;
