@@ -11,6 +11,7 @@
     ['三维魔方','rubiks-cube-3d.html','魔方 cube 三维 3d 动画 复原'],
     ['滑翔伞 · 飞行影像','flight.html','飞行 滑翔伞 paragliding 照片 视频 影像 日志'],
     ['小程序工坊','apps.html','小程序 应用 app 开发 工具'],
+    ['比特币网络共识实验','bitcoin-consensus.html','bitcoin 比特币 共识 网络 分叉 链重组 Python simulation 模拟 白皮书'],
     ['加密货币探索','crypto.html','crypto cryptocurrency 加密货币 代币 构想'],
     ['札记与书架','notes.html','读书 阅读 书架 随想 笔记 问题'],
     ['关于我与这里','about.html','Thomas Young 关于 联系 GitHub'],
@@ -84,3 +85,4 @@
     media=data.filter(m=>m&&['photo','video'].includes(m.type)&&safeSource(m.src)).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));render();
   }).catch(()=>{failed=true;render();});
 })();
+

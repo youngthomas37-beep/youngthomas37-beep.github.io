@@ -1,0 +1,14 @@
+test_config_validation (test_simulator.ConsensusTests.test_config_validation) ... ok
+test_conflict_reorg_removes_loser (test_simulator.ConsensusTests.test_conflict_reorg_removes_loser) ... ok
+test_deep_reorg (test_simulator.ConsensusTests.test_deep_reorg) ... ok
+test_invalid_chain_never_wins (test_simulator.ConsensusTests.test_invalid_chain_never_wins) ... ok
+test_orphan_recovers (test_simulator.ConsensusTests.test_orphan_recovers) ... ok
+test_poisson_and_hash_shares (test_simulator.ConsensusTests.test_poisson_and_hash_shares) ... ok
+test_reproducible (test_simulator.ConsensusTests.test_reproducible) ... ok
+test_tie_and_reorg_restore_pool (test_simulator.ConsensusTests.test_tie_and_reorg_restore_pool) ... ok
+test_zero_delay_and_boundaries (test_simulator.ConsensusTests.test_zero_delay_and_boundaries) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 5.166s
+
+OK
