@@ -1,6 +1,9 @@
 'use strict';
 (() => {
   const entries = [
+    ['钱学森的毕业课题','qian-xuesen-graduation-project.html','钱学森 轨道 火箭 Java 地月 日地月 太阳 三圈 自由返回'],
+    ['地月自由返回·经典版','qian-xuesen-earth-moon-classic.html','钱学森 地球 月球 CR3BP 自由返回 经典'],
+    ['日地月三圈任务·动力版','qian-xuesen-solar-three-orbits.html','钱学森 太阳 地球 月球 绕月 三圈 推力 燃料 Java'],
     ['沟槽反光模拟','concentric_and_straight_groove_imaging.html','光学 物理 同心圆 直线 沟槽 反光 成像 模拟 可视化'],
     ['理论物理与数学','research.html','研究 课题 进展 手记 数学 物理 论文 讲义 成果'],
     ['趣味实验室','play.html','游戏 小发明 玩具 互动 可视化'],
@@ -85,4 +88,5 @@
     media=data.filter(m=>m&&['photo','video'].includes(m.type)&&safeSource(m.src)).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));render();
   }).catch(()=>{failed=true;render();});
 })();
+
 

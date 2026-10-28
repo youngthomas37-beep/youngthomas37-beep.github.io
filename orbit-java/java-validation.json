@@ -1,0 +1,112 @@
+{
+  "java": {
+    "language": "Java",
+    "model": "Bicircular Sun-Earth-Moon finite-thrust mission",
+    "mass": 40000.0,
+    "dry": 8000.0,
+    "isp": 450.0,
+    "thrust": 450000.0,
+    "solarPhase": 0.0,
+    "solar": true,
+    "theta_deg": 222.389724240721,
+    "TLI_dv_km_s": 3.12981981432951,
+    "LOI_dv_km_s": 0.814749852979548,
+    "TEI_dv_km_s": 0.846832525340968,
+    "hM_km": 999.999999909388,
+    "hE_km": 300.000005325413,
+    "tM_days": 3.06677833141388,
+    "tE_days": 6.39326146345395,
+    "turns": 3.00000000000051,
+    "finalMass_kg": 13505.9516923788,
+    "remainingFuel_kg": 5505.95169237879,
+    "totalDv_km_s": 4.79140219262782,
+    "maxBalanceDefect": 1.69347913470119e-09,
+    "accepted": 1952,
+    "rejected": 17,
+    "lunarOrbitMinAltitude_km": 974.976812272105,
+    "lunarOrbitMaxAltitude_km": 1024.76087639331,
+    "maxLunarTwoBodyEnergy": -0.89547456071667,
+    "lapTimes_days": [
+      3.21588897139306,
+      3.36462350604873,
+      3.51335853541136
+    ],
+    "burns": [
+      {
+        "mode": "TLI",
+        "start_days": 0.0,
+        "duration_s": 199.261841599608,
+        "dv_km_s": 3.12981981432951,
+        "fuel_kg": 20319.053050696,
+        "finalMass_kg": 19680.946949304
+      },
+      {
+        "mode": "LOI",
+        "start_days": 3.06677833141388,
+        "duration_s": 32.5374522631619,
+        "dv_km_s": 0.814749852979548,
+        "fuel_kg": 3317.89676016607,
+        "finalMass_kg": 16363.0501891379
+      },
+      {
+        "mode": "TEI",
+        "start_days": 3.51335853541144,
+        "duration_s": 28.0185649732291,
+        "dv_km_s": 0.846832525340968,
+        "fuel_kg": 2857.09849675913,
+        "finalMass_kg": 13505.9516923788
+      }
+    ],
+    "logs": [
+      "TLI 0 theta=229.252000000000 dv=3.125000000000 F=[17005.5912, 5762.28570]",
+      "J=[[3073.83362,1733697.45],[1043.78466,1112066.37]] correction=[-5.54564865,2.35393164e-05]",
+      "TLI 1 theta=223.706351346767 dv=3.125023539316 F=[-360.773652, -326.907882]",
+      "J=[[2687.93625,944176.482],[365.230342,181754.591]] correction=[-1.69159106,0.00519782337]",
+      "TLI 2 theta=222.860555816937 dv=3.127622451004 F=[-398.986824, -202.997844]",
+      "J=[[2892.76051,845218.241],[555.373972,209254.719]] correction=[-0.648124377,0.00269025834]",
+      "TLI 3 theta=222.212431440282 dv=3.130312709345 F=[-166.518263, -22.2908294]",
+      "J=[[3160.25825,785902.527],[867.620874,262603.043]] correction=[0.177059638,-0.000500107719]",
+      "TLI 4 theta=222.389491078563 dv=3.129812601626 F=[-6.62162942, -2.23452671]",
+      "J=[[3167.83425,815425.804],[892.008294,280480.146]] correction=[0.000218090438,7.27320012e-06]",
+      "TLI 5 theta=222.389709169001 dv=3.129819874826 F=[0.00157404166, 0.00352890189]",
+      "J=[[3170.06384,815791.482],[895.187954,281354.851]] correction=[1.50717204e-05,-6.04962895e-08]",
+      "TLI 6 theta=222.389724240721 dv=3.129819814330 F=[-9.06120476e-08, -2.29773667e-08]",
+      "TEI 0 dv=0.800000000000 F=9728.21330 km",
+      "dF/ddv=-263592.5246322586 correction=0.036906256399485936",
+      "TEI 1 dv=0.836906256399 F=1651.32304 km",
+      "dF/ddv=-176827.0519824 correction=0.009338633557959053",
+      "TEI 2 dv=0.846244889957 F=92.0536141 km",
+      "dF/ddv=-157253.12800532265 correction=5.853849477473489E-4",
+      "TEI 3 dv=0.846830274905 F=0.351189084 km",
+      "dF/ddv=-156053.81328487056 correction=2.2504357754751537E-6",
+      "TEI 4 dv=0.846832525341 F=5.32541253e-06 km"
+    ]
+  },
+  "browserDifference": {
+    "hM_km": 1.0240910341963172e-09,
+    "hE_km": -7.051903594401665e-08,
+    "finalMass_kg": -4.2928149923682213e-10
+  },
+  "independentInertialDOP853": {
+    "method": "Independent dimensional barycentric inertial ODE, SciPy DOP853; independent Moon periapsis, 3-turn and Earth periapsis event detection; replay finite burn durations from JS",
+    "rtol": 2.3e-14,
+    "maxCoastStep_s": 150,
+    "maxBurnStep_s": 2,
+    "lunarPeriapsis_km": 999.9999854171001,
+    "earthPeriapsis_km": 300.0002121809721,
+    "tM_days": 3.0667783314273387,
+    "captureEnd_days": 3.0671549223100163,
+    "threeTurns_days": 3.513358532587228,
+    "tE_days": 6.3932614572077995,
+    "turns": 2.999999999999998,
+    "finalMass_kg": 13505.951692379926,
+    "propulsiveDeltaV_km_s": 4.79140219264792,
+    "differenceFromJS_km": [
+      -1.4497836218652083e-05,
+      0.00020722358112834627
+    ]
+  },
+  "desktopSmokeTest": "PASS: real Swing components, solve, event time, slider, playback, orbit camera, frame and lap controls, physical result unchanged, thrust 300 kN re-solve, offscreen rendering",
+  "compileTarget": "Java 17 (class version 61), compiled/run with Zulu OpenJDK 21",
+  "sourceSHA256": "a6ae8d60740b8830da0d53ce6a282472a1dc04e96bdcf9209df2a54db4816722"
+}
