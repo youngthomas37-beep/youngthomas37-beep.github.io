@@ -67,7 +67,7 @@
       <div class="stat"><span>执行进度</span><strong id="progressText">0 / 0</strong></div>
       <div class="stat"><span>当前动作</span><strong id="currentMove">—</strong></div>
       <div class="moves" id="movesList"><div class="move"><span>—</span><span>点击“计算复原步骤”开始</span></div></div>
-      <p class="muted">求解器把 2×2 的角块状态嵌入一个合法的 3×3 角块状态，再用 cubejs 搜索；显示与验证只保留 2×2 的 8 个角块。解法可验证，但不保证是 2×2 的最短解。</p>
+      <p class="muted">求解器用角块排列与朝向两张模式数据库作启发式，以 IDA* 搜索最短解；显示与验证只使用 2×2 的 8 个角块。</p>
     </div>
   </section>
 </main>
@@ -83,7 +83,7 @@
   <h2>2×2×2 魔方与求解方法</h2>
   <div class="inside">
     <p><strong>二阶魔方（Pocket Cube）：</strong>只有 8 个角块，没有中心块和棱块；每个角块有 3 个贴纸，共 24 个贴纸。一个合法状态由角块排列、角块朝向和整体朝向决定，通常计为 3,674,160 种状态。</p>
-    <p><strong>求解方法：</strong>页面内部把 2×2 的 8 个角块嵌入 3×3 魔方的 8 个角位，并补齐一组合法的棱块状态（必要时交换两个棱块以匹配角块排列的奇偶性），再用 cubejs 的 Kociemba 求解器搜索。动画、显示和最终验证只使用 2×2 的角块。</p>
+    <p><strong>求解方法：</strong>角块排列有 8! 种，角块朝向有 3<sup>7</sup> 种。页面用广度优先搜索预计算“排列距离表”和“朝向距离表”，再以两者最大值作为可采纳启发式，用 IDA* 搜索最短解。转动模型基于 cubejs 的角块动作表，显示和最终验证只使用 2×2 的角块。</p>
     <p class="muted">依赖 Three.js 与 cubejs 的 CDN 脚本；需要网络连接。该页面在浏览器本地执行求解，不向服务器上传魔方状态。</p>
   </div>
 </section>
@@ -93,7 +93,6 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cubejs@1.3.2/lib/cube.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/cubejs@1.3.2/lib/solve.js"></script>
 
 <script>
 (function(){
@@ -104,9 +103,10 @@ var FACE_ORDER=['U','R','F','D','L','B'];
 var CORNER_INDEX=[0,2,6,8];
 var GOAL54='UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
 var CORNER_FACE={};
-var state24='', cube=new Cube(), solution=[], cursor=0, history=[], busy=false, autoplay=null, playing=false, solverReady=false;
+var state24='', cube=new Cube(), solution=[], cursor=0, history=[], busy=false, autoplay=null, playing=false;
 var scene,camera,renderer,controls,root,layerGroup;
 var cubelets=[];
+var MOVE_TABLE=null, permDist=null, oriDist=null;
 var ANIM_MS=360;
 var statusEl=$('status');
 function status(s,type){statusEl.textContent=s;statusEl.className='status'+(type?' '+type:'');}
@@ -143,18 +143,109 @@ function is2Solved(s24){
  for(var fi=0;fi<6;fi++)for(var j=0;j<4;j++)if(s24[fi*4+j]!==FACE_ORDER[fi])return false;
  return true;
 }
-function parity(a){
- var p=0;
- for(var i=0;i<a.length;i++)for(var j=i+1;j<a.length;j++)if(a[i]>a[j])p^=1;
- return p;
-}
-function solverCubeFromState(s24){
- var sc=Cube.fromString(embed24(s24));
- if(!sc||!sc.cp||sc.cp.length!==8||sc.cp.some(function(v){return typeof v!=='number';}))throw new Error('无法解析该角块状态');
- if(parity(sc.cp)){
-  var t=sc.ep[0];sc.ep[0]=sc.ep[1];sc.ep[1]=t;
+function cornerStateFrom24(s24){
+ var c=Cube.fromString(embed24(s24));
+ if(!c||!c.cp||c.cp.length!==8||!c.co||c.co.length!==8)throw new Error('无法解析该角块状态');
+ var seen=[],sum=0;
+ for(var i=0;i<8;i++){
+  if(typeof c.cp[i]!=='number'||c.cp[i]<0||c.cp[i]>7||seen[c.cp[i]])throw new Error('角块排列不完整');
+  seen[c.cp[i]]=1;sum+=c.co[i];
  }
- return sc;
+ if(sum%3!==0)throw new Error('角块朝向不守恒');
+ return {cp:c.cp.slice(),co:c.co.slice()};
+}
+var FACT=[1,1,2,6,24,120,720,5040,40320];
+function permRank(cp){
+ var rank=0;
+ for(var i=0;i<8;i++){
+  var c=0;
+  for(var j=i+1;j<8;j++)if(cp[j]<cp[i])c++;
+  rank+=c*FACT[7-i];
+ }
+ return rank;
+}
+function permFromRank(rank){
+ var avail=[0,1,2,3,4,5,6,7],out=[];
+ for(var i=0;i<8;i++){
+  var f=FACT[7-i],idx=Math.floor(rank/f);rank%=f;
+  out.push(avail.splice(idx,1)[0]);
+ }
+ return out;
+}
+function oriIndex(co){
+ var n=0;
+ for(var i=0;i<7;i++)n=n*3+co[i];
+ return n;
+}
+function oriFromIndex(n){
+ var co=[0,0,0,0,0,0,0,0],sum=0;
+ for(var i=6;i>=0;i--){co[i]=n%3;n=Math.floor(n/3);sum+=co[i];}
+ co[7]=(3-(sum%3))%3;
+ return co;
+}
+function applyP(cp,m){
+ var out=[0,0,0,0,0,0,0,0];
+ for(var i=0;i<8;i++)out[i]=cp[m.cp[i]];
+ return out;
+}
+function applyO(co,m){
+ var out=[0,0,0,0,0,0,0,0];
+ for(var i=0;i<8;i++)out[i]=(co[m.cp[i]]+m.co[i])%3;
+ return out;
+}
+function ensureTables(){
+ if(MOVE_TABLE&&permDist&&oriDist)return;
+ MOVE_TABLE=[];
+ FACE_ORDER.forEach(function(face){
+  ['',"'",'2'].forEach(function(suffix){
+   var m=new Cube();m.move(face+suffix);
+   MOVE_TABLE.push({id:face+suffix,face:face,cp:m.cp.slice(),co:m.co.slice()});
+  });
+ });
+ permDist=new Int8Array(40320).fill(-1);
+ var qp=new Uint32Array(40320),hp=0,tp=0;
+ permDist[0]=0;qp[tp++]=0;
+ while(hp<tp){
+  var rank=qp[hp++],state=permFromRank(rank),d=permDist[rank]+1;
+  for(var i=0;i<MOVE_TABLE.length;i++){
+   var nr=permRank(applyP(state,MOVE_TABLE[i]));
+   if(permDist[nr]===-1){permDist[nr]=d;qp[tp++]=nr;}
+  }
+ }
+ oriDist=new Int8Array(2187).fill(-1);
+ var qo=new Uint32Array(2187),ho=0,to=0;
+ oriDist[0]=0;qo[to++]=0;
+ while(ho<to){
+  var oi=qo[ho++],ostate=oriFromIndex(oi),od=oriDist[oi]+1;
+  for(var k=0;k<MOVE_TABLE.length;k++){
+   var no=oriIndex(applyO(ostate,MOVE_TABLE[k]));
+   if(oriDist[no]===-1){oriDist[no]=od;qo[to++]=no;}
+  }
+ }
+}
+function solveCornerState(cp,co){
+ ensureTables();
+ var nodes=0;
+ function dfs(p,o,g,limit,lastFace,path){
+  nodes++;
+  var h=Math.max(permDist[permRank(p)],oriDist[oriIndex(o)]);
+  if(g+h>limit)return false;
+  if(h===0)return true;
+  for(var i=0;i<MOVE_TABLE.length;i++){
+   var m=MOVE_TABLE[i];
+   if(m.face===lastFace)continue;
+   path.push(m.id);
+   if(dfs(applyP(p,m),applyO(o,m),g+1,limit,m.face,path))return true;
+   path.pop();
+  }
+  return false;
+ }
+ var h=Math.max(permDist[permRank(cp)],oriDist[oriIndex(co)]);
+ for(var limit=h;limit<=14;limit++){
+  var path=[];
+  if(dfs(cp.slice(),co.slice(),0,limit,'',path))return path;
+ }
+ throw new Error('未找到 2×2 解法');
 }
 function stateFromCube(c){return extract24(c.asString());}
 function stickerBasis(normal){
@@ -316,15 +407,18 @@ function solve(){
  if(busy)return;stopAuto();
  if(is2Solved(state24)){solution=[];cursor=0;updateStats();$('resultLine').textContent='✓ 当前已复原';status('魔方已经处于还原状态。','ok');return;}
  if(typeof Cube==='undefined'){status('求解器脚本未加载，请检查网络连接。','error');return;}
- $('solveBtn').disabled=true;$('resultLine').textContent='正在搜索……';status('初始化查找表并搜索解法，首次运行可能需要几秒钟。');
+ $('solveBtn').disabled=true;$('resultLine').textContent='正在搜索……';status('构建角块 PDB 并运行 IDA*，首次运行可能需要一两秒……');
  setTimeout(function(){
   try{
-   if(!solverReady){Cube.initSolver();solverReady=true;}
-   var sc=solverCubeFromState(state24);
-   var answer=sc.solve();
-   solution=answer.trim()?answer.trim().split(/\s+/):[];cursor=0;
-   var check=Cube.fromString(sc.asString());solution.forEach(function(m){check.move(m);});
-   if(!check.isSolved())throw new Error('求解器输出未通过复原验证');
+   var st=cornerStateFrom24(state24);
+   var path=solveCornerState(st.cp,st.co);
+   var cp=st.cp.slice(),co=st.co.slice();
+   path.forEach(function(id){
+    var m=MOVE_TABLE.filter(function(x){return x.id===id;})[0];
+    cp=applyP(cp,m);co=applyO(co,m);
+   });
+   for(var i=0;i<8;i++)if(cp[i]!==i||co[i]!==0)throw new Error('求解器输出未通过角块复原验证');
+   solution=path;cursor=0;
    $('resultLine').textContent='✓ 已找到可验证解法';updateStats();status('求解成功：'+solution.length+' 步。点击“下一步”或“自动播放”。','ok');
   }catch(e){solution=[];cursor=0;updateStats();$('resultLine').textContent='求解失败';status('求解错误：'+e.message,'error');}
   finally{$('solveBtn').disabled=false;}
@@ -336,10 +430,11 @@ function importState(){
  var counts={};value.split('').forEach(function(c){counts[c]=(counts[c]||0)+1;});
  if(FACE_ORDER.some(function(f){return counts[f]!==4;})){status('状态无效：每种面标记必须恰好出现 4 次。','error');return;}
  try{
-  var sc=solverCubeFromState(value);
-  var normalized=extract24(sc.asString());
+  cornerStateFrom24(value);
+  var parsed=Cube.fromString(embed24(value));
+  var normalized=extract24(parsed.asString());
   if(normalized!==value)throw new Error('状态编码不一致');
-  stopAuto();cube=sc;state24=value;solution=[];cursor=0;history=[];drawCube();updateStats();$('resultLine').textContent='状态已导入';status('已导入状态。求解器会在搜索时检查状态是否可解。','ok');
+  stopAuto();cube=parsed;state24=value;solution=[];cursor=0;history=[];drawCube();updateStats();$('resultLine').textContent='状态已导入';status('已导入状态。求解器会在搜索时检查状态是否可解。','ok');
  }catch(e){status('导入失败：'+e.message,'error');}
 }
 function copyState(){
@@ -349,7 +444,7 @@ function copyState(){
 }
 function undo(){
  if(busy||!history.length)return;stopAuto();
- try{cube=solverCubeFromState(history.pop());state24=stateFromCube(cube);}catch(e){status('撤销失败：'+e.message,'error');return;}
+ try{cube=Cube.fromString(embed24(history.pop()));state24=stateFromCube(cube);}catch(e){status('撤销失败：'+e.message,'error');return;}
  solution=[];cursor=0;drawCube();updateStats();status('已撤销最后一次手动转动。','ok');
 }
 document.querySelectorAll('[data-move]').forEach(function(b){b.addEventListener('click',async function(){if(busy)return;stopAuto();history.push(state24);solution=[];cursor=0;await turn(b.dataset.move,function(){updateStats();});$('resultLine').textContent='状态已改变';status('已执行 '+b.dataset.move+'。','ok');});});
