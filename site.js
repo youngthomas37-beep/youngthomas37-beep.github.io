@@ -10,7 +10,7 @@
     ['俄罗斯方块 Tetris','tetris.html','游戏 方块 旋转 消行'],
     ['数独求解器','sudoku.html','数独 sudoku 检查 求解'],
     ['三维数独','3d-sudoku.html','三维 3d 数独 切片 原型'],
-    ['二维魔方求解器','rubiks-cube.html','魔方 cube 二维 2d 平面 旋转 2x2 角块 BFS 最短解'],
+    ['2×2 魔方求解器','rubiks-cube.html','魔方 cube 二阶 2x2 pocket 3d 求解 动画 复原'],
     ['三维魔方','rubiks-cube-3d.html','魔方 cube 三维 3d 动画 复原'],
     ['滑翔伞 · 飞行影像','flight.html','飞行 滑翔伞 paragliding 照片 视频 影像 日志'],
     ['滑翔伞旧闻：太原上空，有一群会飞的人','paragliding-old-news.html','滑翔伞 旧闻 太原晚报 2016 郑京波 波教 刘红军 崛围山 飞行采访'],
