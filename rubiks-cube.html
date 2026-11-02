@@ -68,6 +68,18 @@ header{display:flex;justify-content:space-between;align-items:center;gap:16px;pa
 .progress{height:5px;background:#0a1424;border-radius:99px;overflow:hidden;margin:12px 0 4px}
 .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--mint));transition:width .2s ease}
 .note{font-size:.74rem;color:var(--muted);line-height:1.8;margin:10px 0 0}
+.view3d-panel{margin-top:18px}
+.view3d-body{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(240px,.75fr);gap:20px;align-items:center}
+.iso-wrap{background:linear-gradient(160deg,#0a1425,#0e1b30);border:1px solid #2b3c5e;border-radius:14px;padding:8px 8px 2px;overflow:hidden}
+#isoScene{display:block;width:100%;height:auto;min-height:250px}
+.view3d-copy h3{font-size:.95rem;margin:0 0 5px}
+.view3d-copy p{font-size:.77rem;line-height:1.8;color:var(--muted);margin:0 0 10px}
+.map-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);border-top:1px solid var(--line);padding-top:9px;margin-top:2px}
+.map-row b{color:var(--text);font-weight:600}
+.map-dot{width:8px;height:8px;border-radius:2px;background:var(--mint);display:inline-block}
+.cube.moved .top{stroke:#fff;stroke-width:2}
+.cube .top{transition:stroke .15s ease}
+.cube{filter:drop-shadow(0 6px 7px #0008)}
 .lower{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-top:18px}
 .rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .rule{border-top:1px solid var(--line);padding-top:9px}
@@ -77,7 +89,7 @@ header{display:flex;justify-content:space-between;align-items:center;gap:16px;pa
 .field{width:100%;background:#0a1424;border:1px solid #355073;border-radius:8px;padding:9px 11px;color:var(--text);font:600 1.05rem/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.12em}
 code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--mint);font-size:.9em}
 .footer{border-top:1px solid var(--line);margin-top:24px;padding:18px 0 28px;color:var(--muted);font-size:.72rem;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-@media(max-width:900px){.layout,.lower{grid-template-columns:1fr}.board{max-width:440px}.rule-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.layout,.lower{grid-template-columns:1fr}.board{max-width:440px}.rule-grid{grid-template-columns:1fr 1fr}.view3d-body{grid-template-columns:1fr}.iso-wrap{max-width:620px;margin:auto}}
 @media(max-width:560px){
  .wrap{width:calc(100% - 24px)}
  header{padding:16px 0}.hero{padding:26px 0 18px}.panel{padding:15px;border-radius:14px}
@@ -157,6 +169,29 @@ code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--mint
     </section>
   </div>
 
+  <section class="panel view3d-panel" aria-labelledby="view3d-title">
+    <div class="panel-head">
+      <div><div class="kicker">SPATIAL VIEW / 立体映射</div><h2 id="view3d-title">3D 视图</h2></div>
+      <span class="tag">等距投影</span>
+    </div>
+    <div class="view3d-body">
+      <div class="iso-wrap">
+        <svg id="isoScene" viewBox="70 8 420 292" role="img" aria-labelledby="isoTitle isoDesc">
+          <title id="isoTitle">二维盘面的 3D 等距投影</title>
+          <desc id="isoDesc">9 个数字方块以等距立体方块显示，颜色与数字和上方 2D 盘面一一对应。</desc>
+          <ellipse cx="280" cy="245" rx="205" ry="48" fill="#050b15" opacity=".62"/>
+          <g id="isoCubes"></g>
+        </svg>
+      </div>
+      <div class="view3d-copy">
+        <h3>同一个盘面，换一个空间视角</h3>
+        <p>每个数字块对应一个立体方块。旋转左上、右上、左下或右下的 2×2 角块时，四个方块会同步换位；数字、颜色和 2D 盘面始终一致。等距视角把 3×3 平面转成菱形：2D 顶行在 3D 图上方，右列向右下延伸。</p>
+        <div class="map-row"><span class="map-dot"></span><span><b>2D 数字块</b> ↔ <b>3D 方块</b></span></div>
+        <div class="map-row" style="border-top:0;padding-top:2px">高亮边框表示最近一次旋转涉及的四个方块。</div>
+      </div>
+    </div>
+  </section>
+
   <div class="lower">
     <section class="panel" aria-labelledby="rules-title">
       <h2 id="rules-title">规则 / How it works</h2>
@@ -206,7 +241,7 @@ for(const id of Object.keys(CORNERS)){
 const MOVE_BY_ID=new Map(MOVES.map(m=>[m.id,m]));
 const $=id=>document.getElementById(id);
 const board=$("board"), moveGrid=$("moveGrid"), statusEl=$("status"), solutionEl=$("solution");
-let state=GOAL.slice(), history=[], solution=[], stepIndex=0, moveCount=0, index=null, busy=false;
+let state=GOAL.slice(), history=[], solution=[], stepIndex=0, moveCount=0, index=null, busy=false, lastMove=null;
 $("year").textContent=new Date().getFullYear();
 
 function inverse(id){return id.endsWith("p")?id.slice(0,-1):id+"p";}
@@ -276,6 +311,33 @@ function render(){
   $("solutionCount").textContent=solution.length+" 步";
   $("progressBar").style.width=solution.length?(100*stepIndex/solution.length)+"%":"0%";
   renderSolution();
+  render3D();
+}
+function shade(hex,factor){
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.round(((n>>16)&255)*factor), g=Math.round(((n>>8)&255)*factor), b=Math.round((n&255)*factor);
+  return `rgb(${r},${g},${b})`;
+}
+function render3D(){
+  const group=$("isoCubes"); if(!group)return;
+  const a=62,b=36,h=20,ox=280,oy=64;
+  const cells=[];
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++)cells.push({i:r*3+c,row:r,col:c});
+  cells.sort((p,q)=>(p.row+p.col)-(q.row+q.col)||p.col-q.col);
+  group.innerHTML=cells.map(cell=>{
+    const n=state[cell.i], color=COLORS[n][0], fg=COLORS[n][1];
+    const x=ox+(cell.col-cell.row)*a, y=oy+(cell.col+cell.row)*b;
+    const top=`${x},${y-b} ${x+a},${y} ${x},${y+b} ${x-a},${y}`;
+    const left=`${x-a},${y} ${x},${y+b} ${x},${y+b+h} ${x-a},${y+h}`;
+    const right=`${x+a},${y} ${x},${y+b} ${x},${y+b+h} ${x+a},${y+h}`;
+    const moved=lastMove&&lastMove.includes(cell.i)?" moved":"";
+    return `<g class="cube${moved}" aria-label="第 ${cell.i+1} 格：${n}">
+      <polygon class="left" points="${left}" fill="${shade(color,.72)}"/>
+      <polygon class="right" points="${right}" fill="${shade(color,.54)}"/>
+      <polygon class="top" points="${top}" fill="${color}" stroke="#ffffff66" stroke-width="1"/>
+      <text x="${x}" y="${y+1}" text-anchor="middle" dominant-baseline="central" font-size="23" font-weight="900" fill="${fg}" style="font-family:Inter,ui-sans-serif,system-ui,'Microsoft YaHei',sans-serif">${n}</text>
+    </g>`;
+  }).join("");
 }
 function renderSolution(){
   solutionEl.innerHTML="";
@@ -306,6 +368,7 @@ function manualMove(id){
   history.push(state.slice());
   state=applyMove(state,id);
   moveCount++;
+  lastMove=MOVE_BY_ID.get(id).idx.slice();
   clearSolution();
   render();
   setStatus("已旋转"+labelOf(id)+"。","ok");
@@ -318,17 +381,17 @@ function scramble(){
     let m; do{m=MOVES[Math.floor(Math.random()*MOVES.length)];}while(m.base===lastBase);
     lastBase=m.base; s=applyMove(s,m.id);
   }
-  state=s;history=[];moveCount=0;clearSolution();render();
+  state=s;history=[];moveCount=0;lastMove=null;clearSolution();render();
   setStatus("已随机打乱 20 步。点击“计算最短解”开始。","ok");
 }
 function reset(){
   if(busy)return;
-  state=GOAL.slice();history=[];moveCount=0;clearSolution();render();
+  state=GOAL.slice();history=[];moveCount=0;lastMove=null;clearSolution();render();
   setStatus("已回到复原态。","ok");
 }
 function undo(){
   if(busy||!history.length||solution.length)return;
-  state=history.pop();moveCount=Math.max(0,moveCount-1);render();
+  state=history.pop();moveCount=Math.max(0,moveCount-1);lastMove=null;render();
   setStatus("已撤销上一步。","ok");
 }
 function buildIndex(){
@@ -372,7 +435,7 @@ function solve(){
       }
       const check=applyPath(state,path);
       if(!isSolved(check))throw new Error("解法校验失败。");
-      solution=path;stepIndex=0;history=[];render();
+      solution=path;stepIndex=0;history=[];lastMove=null;render();
       setStatus("找到最短解：共 "+path.length+" 步。可以逐步执行。","ok");
       $("solverBadge").textContent="已求出";
     }catch(e){
@@ -385,18 +448,21 @@ function solve(){
 }
 function nextStep(){
   if(busy||stepIndex>=solution.length)return;
-  state=applyMove(state,solution[stepIndex]);stepIndex++;moveCount++;render();
-  setStatus("执行第 "+stepIndex+" / "+solution.length+" 步："+labelOf(solution[stepIndex-1]),"ok");
+  const id=solution[stepIndex];
+  state=applyMove(state,id);lastMove=MOVE_BY_ID.get(id).idx.slice();stepIndex++;moveCount++;render();
+  setStatus("执行第 "+stepIndex+" / "+solution.length+" 步："+labelOf(id),"ok");
   finishIfSolved();
 }
 function prevStep(){
   if(busy||stepIndex<=0)return;
-  stepIndex--;state=applyMove(state,inverse(solution[stepIndex]));moveCount=Math.max(0,moveCount-1);render();
+  stepIndex--;const id=solution[stepIndex];
+  state=applyMove(state,inverse(id));lastMove=MOVE_BY_ID.get(id).idx.slice();moveCount=Math.max(0,moveCount-1);render();
   setStatus("已退回第 "+stepIndex+" 步。","ok");
 }
 function applyAll(){
   if(busy||!solution.length)return;
-  while(stepIndex<solution.length){state=applyMove(state,solution[stepIndex]);stepIndex++;moveCount++;}
+  let id=null;
+  while(stepIndex<solution.length){id=solution[stepIndex];lastMove=MOVE_BY_ID.get(id).idx.slice();state=applyMove(state,id);stepIndex++;moveCount++;}
   render();setStatus(isSolved(state)?"已执行完整解法，魔方复原。":"已执行解法，请检查盘面。",isSolved(state)?"ok":"");
   finishIfSolved();
 }
@@ -409,7 +475,7 @@ function importState(){
     setStatus("状态无效：1–9 每个数字必须恰好出现一次。","error");return;
   }
   const next=[...raw].map(Number);
-  state=next;history=[];moveCount=0;clearSolution();render();
+  state=next;history=[];moveCount=0;lastMove=null;clearSolution();render();
   setStatus(index&&!index.parent.has(raw)?"已导入，但该盘面不可达。":"已导入盘面。点击“计算最短解”验证并求解。","ok");
 }
 function copyState(){
