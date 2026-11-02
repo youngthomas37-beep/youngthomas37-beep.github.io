@@ -13,6 +13,7 @@
     ['二维魔方求解器','rubiks-cube.html','魔方 cube 二维 2d 求解'],
     ['三维魔方','rubiks-cube-3d.html','魔方 cube 三维 3d 动画 复原'],
     ['滑翔伞 · 飞行影像','flight.html','飞行 滑翔伞 paragliding 照片 视频 影像 日志'],
+    ['滑翔伞旧闻：太原上空，有一群会飞的人','paragliding-old-news.html','滑翔伞 旧闻 太原晚报 2016 郑京波 波教 刘红军 崛围山 飞行采访'],
     ['小程序工坊','apps.html','小程序 应用 app 开发 工具'],
     ['比特币网络共识实验','bitcoin-consensus.html','bitcoin 比特币 共识 网络 分叉 链重组 Python simulation 模拟 白皮书'],
     ['加密货币探索','crypto.html','crypto cryptocurrency 加密货币 代币 构想'],
