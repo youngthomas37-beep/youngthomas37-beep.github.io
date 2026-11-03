@@ -7,11 +7,11 @@
 <meta name="theme-color" content="#f6f4ee">
 <title>Paragliding Flight Lab · Thomas Young</title>
 <link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="flight-lab.css">
+<link rel="stylesheet" href="flight-lab.css?v=20261103-D">
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
-<script src="flight-lab.js?v=20261103-A" defer></script>
+<script src="flight-lab.js?v=20261103-D" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">跳到正文</a>
@@ -68,7 +68,17 @@
         <button type="button" class="btn ghost" id="exportBtn">导出本机记录 ZIP</button>
         <details class="publish-note">
           <summary>如何公开一条记录</summary>
-          <p>本站是静态页面，访客上传只保存在自己的浏览器。若要公开，把 `.igc` 放入 <code>flight-data/igc/</code>，并在 <code>flight-data/igc/index.json</code> 登记。</p>
+          <p>本站是静态页面，访客上传只保存在自己的浏览器。公开记录放在 <code>flight-data/igc/</code>，页面会通过 GitHub 目录自动发现，无需逐条维护清单。</p>
+        </details>
+        <details class="publish-tool">
+          <summary>站点维护者 · 发布本机记录</summary>
+          <p class="publish-help">用自己的 GitHub fine-grained token（仅限本仓库 <code>Contents: Read and write</code>）把本机记录一次性提交到 <code>flight-data/igc/</code>。Token 只用于 api.github.com，不会写进页面或仓库。</p>
+          <label>仓库 <input id="repoInput" type="text" value="youngthomas37-beep/youngthomas37-beep.github.io" autocomplete="off" spellcheck="false"></label>
+          <label>分支 <input id="branchInput" type="text" value="main" autocomplete="off" spellcheck="false"></label>
+          <label>GitHub token <input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false"></label>
+          <label class="publish-check"><input id="rememberToken" type="checkbox"> 本标签页记住 token</label>
+          <button type="button" class="btn primary" id="publishBtn">发布本机记录到公开目录</button>
+          <span class="status" id="publishStatus" role="status" aria-live="polite">尚未发布。</span>
         </details>
       </div>
     </aside>

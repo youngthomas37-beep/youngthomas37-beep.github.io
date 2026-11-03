@@ -4,6 +4,10 @@
 const $ = (id) => document.getElementById(id);
 const DB_NAME = 'ty-flight-lab';
 const STORE = 'flights';
+const GITHUB_API = 'https://api.github.com';
+const GITHUB_REPO = 'youngthomas37-beep/youngthomas37-beep.github.io';
+const GITHUB_BRANCH = 'main';
+const PUBLIC_DIR = 'flight-data/igc';
 const state = {
   flights: [],
   current: null,
@@ -210,14 +214,19 @@ function upsertFlight(f) {
   state.flights.sort((a, b) => (b.date || '').localeCompare(a.date || '') || a.name.localeCompare(b.name));
 }
 
+function dateFromName(name) {
+  const m = String(name).match(/20\d{2}-\d{2}-\d{2}/);
+  return m ? m[0] : '未知日期';
+}
+
 function publicFlight(item) {
   const name = String(item.name || item.file || 'IGC').split('/').pop();
   return {
     id: 'public-' + hash(String(item.src || name)),
     name,
-    date: item.date || '未知日期',
+    date: item.date || dateFromName(name),
     source: 'public',
-    src: item.src || 'flight-data/igc/' + name,
+    src: item.src || PUBLIC_DIR + '/' + encodeURIComponent(name),
     text: null,
     fix: null,
     circles: [],
@@ -226,17 +235,53 @@ function publicFlight(item) {
   };
 }
 
-async function loadPublished() {
+async function fetchJson(url, options = {}, timeout = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
   try {
-    const res = await fetch('flight-data/igc/index.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    const list = Array.isArray(data) ? data : (data.flights || []);
-    for (const item of list) if (item && (item.src || item.file)) upsertFlight(publicFlight(item));
-    if (!list.length) setStatus('暂无公开 IGC；导入文件，或按下方说明发布公开记录。');
-  } catch (err) {
-    setStatus('暂无公开目录；导入本机 IGC 即可开始。');
+    const res = await fetch(url, { ...options, signal: controller.signal, cache: 'no-store' });
+    const text = await res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status}${text ? ' · ' + text.slice(0, 120) : ''}`);
+    return text ? JSON.parse(text) : null;
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+async function loadPublished() {
+  let count = 0;
+
+  // GitHub directory discovery: new .igc files appear without a manifest edit.
+  try {
+    const list = await fetchJson(
+      `${GITHUB_API}/repos/${GITHUB_REPO}/contents/${PUBLIC_DIR}?ref=${encodeURIComponent(GITHUB_BRANCH)}`,
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    if (Array.isArray(list)) {
+      for (const item of list) {
+        if (item && item.type === 'file' && /\.igc$/i.test(item.name)) {
+          upsertFlight(publicFlight({ name: item.name, src: PUBLIC_DIR + '/' + encodeURIComponent(item.name) }));
+          count++;
+        }
+      }
+    }
+  } catch (_) {
+    // fall through to the small committed manifest
+  }
+
+  if (!count) {
+    try {
+      const res = await fetch(`${PUBLIC_DIR}/index.json`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.flights || []);
+        for (const item of list) if (item && (item.src || item.file)) { upsertFlight(publicFlight(item)); count++; }
+      }
+    } catch (_) {}
+  }
+
+  if (count) setStatus(`已发现 ${count} 条公开 IGC；点击即可加载三维轨迹。`);
+  else setStatus('暂无公开 IGC；导入文件，或按站点维护者说明发布。');
 }
 
 async function loadLocal() {
@@ -553,18 +598,18 @@ function initScene() {
   scene.add(pathGroup);
 
   currentMarker = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.SphereGeometry(0.20, 18, 18), new THREE.MeshBasicMaterial({ color: 0xffb21a }));
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffb21a }));
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({
     map: makeGlowTexture(), color: 0xffb21a, transparent: true, opacity: 0.9,
     blending: THREE.AdditiveBlending, depthWrite: false,
   }));
-  halo.scale.set(1.8, 1.8, 1);
+  halo.scale.set(0.95, 0.95, 1);
   currentMarker.add(core, halo);
   currentMarker.visible = false;
   scene.add(currentMarker);
 
   currentLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
-  currentLine = new THREE.Line(currentLineGeo, new THREE.LineBasicMaterial({ color: 0xffb21a, transparent: true, opacity: 0.42 }));
+  currentLine = new THREE.Line(currentLineGeo, new THREE.LineBasicMaterial({ color: 0xffb21a, transparent: true, opacity: 0.34 }));
   currentLine.visible = false;
   scene.add(currentLine);
 
@@ -674,7 +719,7 @@ function buildScene(f) {
   const curve = new THREE.CatmullRomCurve3(sample.map(s => s.p), false, 'centripetal', 0.5);
   const tubular = Math.min(760, Math.max(100, sample.length * 2));
   const radial = 6;
-  const geo = new THREE.TubeGeometry(curve, tubular, 0.10, radial, false);
+  const geo = new THREE.TubeGeometry(curve, tubular, 0.035, radial, false);
   const colors = new Float32Array(geo.attributes.position.count * 3);
   const per = radial + 1;
   for (let i = 0; i < geo.attributes.position.count; i++) {
@@ -685,10 +730,10 @@ function buildScene(f) {
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   pathGroup.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true })));
-  const glowGeo = new THREE.TubeGeometry(curve, tubular, 0.19, radial, false);
+  const glowGeo = new THREE.TubeGeometry(curve, tubular, 0.062, radial, false);
   glowGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   pathGroup.add(new THREE.Mesh(glowGeo, new THREE.MeshBasicMaterial({
-    vertexColors: true, transparent: true, opacity: 0.06,
+    vertexColors: true, transparent: true, opacity: 0.045,
     blending: THREE.AdditiveBlending, depthWrite: false,
   })));
 
@@ -709,8 +754,8 @@ function buildScene(f) {
     new THREE.LineBasicMaterial({ color: 0x2b5b6b, transparent: true, opacity: 0.16 })
   ));
 
-  addMarker(f.scenePoints[0], 0x3b9cff, 0.14);
-  addMarker(f.scenePoints[f.scenePoints.length - 1], 0xffb21a, 0.16);
+  addMarker(f.scenePoints[0], 0x3b9cff, 0.07);
+  addMarker(f.scenePoints[f.scenePoints.length - 1], 0xffb21a, 0.08);
 
   for (let k = 1; k <= 5; k++) {
     const i = Math.min(f.scenePoints.length - 2, Math.floor((f.scenePoints.length - 1) * k / 6));
@@ -780,7 +825,10 @@ function indexAtTime(f, t) {
     const mid = (lo + hi + 1) >> 1;
     if (f.fix[mid].t <= t) lo = mid; else hi = mid - 1;
   }
-  return lo;
+  if (lo >= f.fix.length - 1) return f.fix.length - 1;
+  const a = f.fix[lo], b = f.fix[lo + 1];
+  const span = Math.max(0.001, b.t - a.t);
+  return lo + clamp((t - a.t) / span, 0, 1);
 }
 
 /* ---------- playback ---------- */
@@ -1046,6 +1094,11 @@ function wire() {
   $('viewBtn').addEventListener('click', resetCamera);
   $('recordBtn').addEventListener('click', recordVideo);
   $('exportBtn').addEventListener('click', exportLocal);
+  $('publishBtn').addEventListener('click', publishLocalRecords);
+  try {
+    const savedToken = sessionStorage.getItem('flight-lab-token');
+    if (savedToken) { $('tokenInput').value = savedToken; $('rememberToken').checked = true; }
+  } catch (_) {}
   $('telemetryCanvas').addEventListener('pointermove', e => {
     if (!state.current) return;
     const r = e.currentTarget.getBoundingClientRect();
@@ -1055,6 +1108,96 @@ function wire() {
     setIndex(ratio * (state.current.fix.length - 1));
   });
   window.addEventListener('resize', () => drawTelemetry(state.current, state.index));
+}
+
+function setPublishStatus(message, kind = '') {
+  const el = $('publishStatus');
+  el.textContent = message;
+  el.className = 'status' + (kind ? ' ' + kind : '');
+}
+
+function safeIgcName(name) {
+  let base = String(name).split(/[\\/]/).pop().replace(/[^\w.\-]+/g, '_');
+  if (!/\.igc$/i.test(base)) base += '.igc';
+  return base;
+}
+
+function base64Utf8(text) {
+  return btoa(unescape(encodeURIComponent(text)));
+}
+
+async function publishLocalRecords() {
+  const token = $('tokenInput').value.trim();
+  const repo = ($('repoInput').value.trim() || GITHUB_REPO).replace(/^\/+|\/+$/g, '');
+  const branch = $('branchInput').value.trim() || GITHUB_BRANCH;
+  const local = state.flights.filter(f => f.source === 'local' && f.text);
+  if (!token) { setPublishStatus('请先填写 GitHub token。', 'error'); return; }
+  if (!/^[^\s/]+\/[^\s/]+$/.test(repo)) { setPublishStatus('仓库格式应为 owner/repo。', 'error'); return; }
+  if (!local.length) { setPublishStatus('本机还没有可发布的 IGC，先导入文件。', 'error'); return; }
+  if (!confirm(`将 ${local.length} 条本机记录提交到 ${repo} 的 ${PUBLIC_DIR}/？\n\n这会产生一次 GitHub commit，其他访客随即可以看到。`)) return;
+
+  const headers = {
+    Accept: 'application/vnd.github+json',
+    Authorization: `Bearer ${token}`,
+    'X-GitHub-Api-Version': '2022-11-28',
+    'Content-Type': 'application/json',
+  };
+  const base = `${GITHUB_API}/repos/${repo}`;
+  const button = $('publishBtn');
+  button.disabled = true;
+  setPublishStatus(`准备发布 ${local.length} 条记录…`);
+
+  try {
+    const ref = await fetchJson(`${base}/git/ref/heads/${encodeURIComponent(branch)}`, { headers }, 20000);
+    const head = ref.object.sha;
+    const commit = await fetchJson(`${base}/git/commits/${head}`, { headers }, 20000);
+    const baseTree = commit.tree.sha;
+    const tree = [];
+    const used = new Set();
+    for (let i = 0; i < local.length; i++) {
+      let name = safeIgcName(local[i].name);
+      let n = 1;
+      while (used.has(name)) {
+        const stem = name.replace(/\.igc$/i, '');
+        name = `${stem}-${++n}.igc`;
+      }
+      used.add(name);
+      setPublishStatus(`上传 ${i + 1} / ${local.length}：${name}`);
+      const blob = await fetchJson(`${base}/git/blobs`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ content: base64Utf8(local[i].text), encoding: 'base64' }),
+      }, 30000);
+      tree.push({ path: `${PUBLIC_DIR}/${name}`, mode: '100644', type: 'blob', sha: blob.sha });
+    }
+    setPublishStatus('创建 Git tree…');
+    const newTree = await fetchJson(`${base}/git/trees`, {
+      method: 'POST', headers,
+      body: JSON.stringify({ base_tree: baseTree, tree }),
+    }, 30000);
+    setPublishStatus('创建 commit…');
+    const newCommit = await fetchJson(`${base}/git/commits`, {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        message: `Publish ${tree.length} IGC flights from Flight Lab`,
+        tree: newTree.sha,
+        parents: [head],
+      }),
+    }, 30000);
+    setPublishStatus('更新 main 分支…');
+    await fetchJson(`${base}/git/refs/heads/${encodeURIComponent(branch)}`, {
+      method: 'PATCH', headers,
+      body: JSON.stringify({ sha: newCommit.sha, force: false }),
+    }, 30000);
+    if ($('rememberToken').checked) sessionStorage.setItem('flight-lab-token', token);
+    else sessionStorage.removeItem('flight-lab-token');
+    setPublishStatus(`已发布 ${tree.length} 条记录，commit ${newCommit.sha.slice(0, 7)}。`, 'ok');
+    await loadPublished();
+    renderList();
+  } catch (err) {
+    setPublishStatus('发布失败：' + err.message, 'error');
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function exportLocal() {
@@ -1081,7 +1224,11 @@ async function boot() {
   await Promise.all([loadPublished(), loadLocal()]);
   renderList();
   if (state.flights.length) {
+    const localCount = state.flights.filter(f => f.source === 'local').length;
+    const publicCount = state.flights.filter(f => f.source === 'public').length;
     selectFlight(state.flights[0]);
+    if (localCount) setStatus(`已载入 ${localCount} 条本机记录${publicCount ? `，并发现 ${publicCount} 条公开 IGC` : ''}。`);
+    else setStatus(`已发现 ${publicCount} 条公开 IGC；点击即可加载三维轨迹。`);
   } else {
     setStatus('导入一个 IGC 或 ZIP 开始；也可以把 IGC 发布到 flight-data/igc/。');
   }
