@@ -5,6 +5,7 @@
     ['地月自由返回·经典版','qian-xuesen-earth-moon-classic.html','钱学森 地球 月球 CR3BP 自由返回 经典'],
     ['日地月三圈任务·动力版','qian-xuesen-solar-three-orbits.html','钱学森 太阳 地球 月球 绕月 三圈 推力 燃料 Java'],
     ['沟槽反光模拟','concentric_and_straight_groove_imaging.html','光学 物理 同心圆 直线 沟槽 反光 成像 模拟 可视化'],
+    ['费曼观察圆盘','feynman-plate.html','费曼 圆盘 刚体 进动 自转 拉格朗日 哈密顿 角动量 模拟 动画 2:1'],
     ['理论物理与数学','research.html','研究 课题 进展 手记 数学 物理 论文 讲义 成果'],
     ['趣味实验室','play.html','游戏 小发明 玩具 互动 可视化'],
     ['俄罗斯方块 Tetris','tetris.html','游戏 方块 旋转 消行'],

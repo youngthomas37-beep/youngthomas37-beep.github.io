@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="费曼观察圆盘：自由刚体进动的完整推导与数值模拟。薄圆盘进动（摇晃）频率恰为自转频率的两倍（2:1）。">
+<meta name="theme-color" content="#f6f4ee">
+<title>费曼观察圆盘 · Thomas Young</title>
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+<style>
+  .equation{text-align:center;margin:20px 0;overflow-x:auto;padding:2px 0}
+  .equation img{vertical-align:middle}
+  .figure{margin:26px 0;text-align:center}
+  .figure img{display:block;margin:0 auto;max-width:100%;height:auto;border:1px solid var(--line);background:#fff}
+  .figure figcaption{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.8}
+  .figure.plain img{border:0;background:transparent}
+  .result-box{background:var(--wash);border-left:3px solid var(--rust);padding:18px 22px;margin:22px 0}
+  .result-box p{margin:4px 0;color:#4d554e}
+  .result-box strong{color:var(--ink);font-weight:600}
+  .paramline{font-size:13px;color:var(--muted)}
+  .article .lead{color:var(--ink);font-size:15px}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<div class="site">
+<header class="masthead">
+  <a class="wordmark" href="index.html">Thomas Young<small>一 个 人 的 探 索 札 记</small></a>
+  <span class="mastnote">在方程与风之间</span>
+</header>
+<nav class="topnav" aria-label="主导航">
+  <a href="index.html">首页</a>
+  <a href="play.html">← 趣味实验室</a>
+  <a href="#theory">方程与推导</a>
+  <a href="#simulation">三维动画</a>
+</nav>
+
+<div class="shell">
+<aside class="sidebar">
+  <div class="sidebar-inner">
+    <div class="side-label">CONTENTS / 目录</div>
+    <nav aria-label="栏目目录">
+      <a href="research.html"><span class="idx">01</span><span>理论物理与数学</span></a>
+      <a href="play.html"><span class="idx">02</span><span>趣味实验室</span></a>
+      <a href="flight.html"><span class="idx">03</span><span>滑翔伞影像</span></a>
+      <a href="apps.html"><span class="idx">04</span><span>小程序工坊</span></a>
+      <a href="crypto.html"><span class="idx">05</span><span>加密货币探索</span></a>
+      <a href="notes.html"><span class="idx">06</span><span>札记与书架</span></a>
+    </nav>
+    <div class="side-box">
+      <div class="side-label">ABOUT THIS SPACE</div>
+      <p>从纸上的推演，到屏幕里的实验，再到天空中的片刻。把值得留存的过程，慢慢记录下来。</p>
+      <a href="about.html">关于我与这里 ↗</a>
+    </div>
+    <div class="side-box">
+      <div class="side-label">INDEX / 索引</div>
+      <p><a href="archive.html">全站目录</a>　·　<a href="index.html#updates">更新记录</a><br><a href="https://github.com/youngthomas37-beep">GitHub ↗</a></p>
+    </div>
+    <div class="side-marker"></div>
+    <p class="note">内容慢慢累积，<br>问题始终开放。</p>
+  </div>
+</aside>
+
+<main class="content" id="main">
+<div class="breadcrumb"><a href="index.html">首页</a> / <a href="play.html">趣味实验室</a> / 费曼观察圆盘</div>
+
+<header class="page-intro">
+  <div class="kicker">02 / PLAY &amp; MAKE · RIGID BODY DYNAMICS</div>
+  <h1>费曼观察圆盘</h1>
+  <p class="lead">二战结束后，费曼在康奈尔食堂看到一个被抛向空中的餐盘：盘子一边自转（spin），它的转轴一边在空中微微摇晃（wobble，即进动）。纯粹为了好玩，费曼推导了它的运动方程，发现了一个漂亮的整数关系——<strong>当摇晃角很小时，盘子摇晃（进动）的频率，恰好是它自转频率的两倍</strong>。这个"2"来自一个简单的几何事实：薄圆盘绕轴的转动惯量，是绕直径的两倍。</p>
+</header>
+
+<section class="article">
+<h2>一、受力分析与模型</h2>
+<p>把盘子看成薄均匀圆盘（质量 m、半径 R），抛出后忽略空气阻力，空中只受重力 m<b>g</b>，作用在质心 C。对质心取矩：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq01.png" alt="力矩 τ = r × mg = 0"></div>
+<p>重力过质心、力臂为零，所以对质心无外力矩，角动量守恒：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq02.png" alt="dL/dt = 0，角动量守恒"></div>
+<p>这就是"自由刚体（torque-free）"情形。取固连主轴系（ê₃ 沿盘面法线即对称轴，ê₁、ê₂ 在盘面内），薄盘的转动惯量为：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq03.png" alt="转动惯量 I1=I2=I⊥=mR²/4，I3=mR²/2，比值 2"></div>
+<p>惯量张量在本体系为 diag(I⊥, I⊥, I₃)。<strong>关键比值 I₃/I⊥ = 2 正是最终 2:1 的来源。</strong></p>
+<figure class="figure plain">
+  <img src="media/feynman-plate/free-body-diagram.png" alt="受力分析图：自由刚体、无力矩、角动量守恒、进动">
+  <figcaption>受力分析图：重力 mg 过质心 → 无力矩 → 角动量 L 守恒；对称轴 ê₃ 与 L 的夹角 θ（章动角）守恒，ê₃ 绕 L 进动（wobble）。</figcaption>
+</figure>
+</section>
+
+<section class="article">
+<h2>二、拉格朗日量</h2>
+<p>用欧拉角 (φ, θ, ψ)（φ 进动、θ 章动、ψ 自转）。刚体角速度在本体系的三个分量为：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq04.png" alt="欧拉角角速度分量"></div>
+<p>动能（无势能，V = 0）即为拉格朗日量：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq05.png" alt="拉格朗日量 L = T"></div>
+</section>
+
+<section class="article">
+<h2>三、哈密顿量</h2>
+<p>广义动量分别为（p_φ = L_Z 是角动量沿空间固定轴的分量，p_ψ = I₃ω₃ = L₃ 是沿对称轴的分量）：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq06.png" alt="广义动量"></div>
+<p>哈密顿量取对称陀螺的标准形式，数值上等于能量 T：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq07.png" alt="哈密顿量 H = T"></div>
+</section>
+
+<section class="article">
+<h2>四、守恒量</h2>
+<p>无外力矩 → 角动量矢量守恒；无耗散 → 能量守恒；φ、ψ 都是循环坐标 → 对应的两个角动量分量守恒：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq08.png" alt="角动量与能量守恒"></div>
+<div class="equation"><img src="media/feynman-plate/eq/eq09.png" alt="L_Z 与 L_3 守恒"></div>
+<p>由这些守恒量进一步推出：章动角 θ、自转角速度 ω₃、横向角速度 ω⊥ = √(ω₁²+ω₂²) 都不随时间变化。</p>
+</section>
+
+<section class="article">
+<h2>五、运动方程（欧拉方程）</h2>
+<p>刚体动力学在本体系的基本方程：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq10.png" alt="欧拉方程（一般对称刚体）"></div>
+<p>代入薄盘 I₁ = I₂ = I⊥、I₃ = 2I⊥，得到简洁的形式：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq11.png" alt="欧拉方程（薄盘）"></div>
+<p>即在本体系中，角速度横向分量 (ω₁, ω₂) 以角频率 Ω_b 绕对称轴 ê₃ 旋转（体锥进动）：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq12.png" alt="体锥进动角频率 Ω_b = ω₃"></div>
+</section>
+
+<section class="article" id="theory">
+<h2>六、费曼的 2 : 1</h2>
+<p>空间系中，对称轴 ê₃ 绕固定角动量 L 的进动角速度为：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq13.png" alt="进动角速度 φ̇ = L/I⊥"></div>
+<p>盘子的自转（绕 ê₃ 的角速度分量）为：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq14.png" alt="自转 ω₃ = L cosθ / I₃"></div>
+<p>两者之比——也就是费曼关心的"摇晃（进动）频率 / 自转频率"：</p>
+<div class="equation"><img src="media/feynman-plate/eq/eq15.png" alt="比值 = 2/cosθ → 2"></div>
+<div class="result-box">
+  <p><strong>费曼 2:1 结论：</strong>薄圆盘的进动（摇晃 / wobble）频率，恰为自转（spin）频率的 <strong>2 倍</strong>。小摇晃角极限下 φ̇ / ω₃ = I₃/I⊥ = 2，更精确地，任意小角度下为 2/cosθ，θ → 0 时严格趋于 2。</p>
+</div>
+<p class="note">一个容易混淆的细节：这里的"进动"（wobble）比"自转"（spin）快一倍——盘子每自转一圈，它的轴已经摇晃（进动）了两圈。这正是费曼从餐盘校徽上看到的 2:1，"2"来自薄盘 I₃ = 2I⊥ 的几何事实。</p>
+</section>
+
+<section class="article" id="simulation">
+<h2>七、数值模拟与三维动画</h2>
+<p>用 4 阶 Runge–Kutta 积分欧拉方程（角速度）+ 四元数姿态运动学，对整段运动做数值求解，并校验守恒律与 2:1。</p>
+<p class="paramline">参数：I⊥ = 1、I₃ = 2（保持薄盘 2:1 比值）；初值 ω₃ = 1.0（自转）、ω₁ = 0.18·ω₃（微小摇晃）、ω₂ = 0。</p>
+<table class="guide-table">
+<tr><th>数值结果</th><th>数值</th></tr>
+<tr><td>自转频率 ω₃</td><td>1.0000 rad/s（严格守恒，漂移 0）</td></tr>
+<tr><td>进动频率 φ̇</td><td>2.0081 rad/s</td></tr>
+<tr><td>比值 φ̇ / ω₃</td><td>2.0081 = 2/cos(5.14°)，θ → 0 时 → 2</td></tr>
+<tr><td>角动量漂移 Δ|L|</td><td>8.7 × 10⁻¹³</td></tr>
+<tr><td>能量漂移 ΔT</td><td>1.6 × 10⁻¹⁵</td></tr>
+</table>
+<figure class="figure">
+  <img src="media/feynman-plate/animation.gif" alt="费曼飞盘三维动画：自转 + 进动，进动频率是自转的 2 倍" style="width:min(540px,100%)">
+  <figcaption>三维动画：蓝色辐条显示自转（spin），红色校徽在盘心，对称轴 ê₃ 绕角动量 L 进动（wobble），虚线为进动锥轨迹。可清楚看到盘子每自转一圈、轴已经摇晃了两圈。</figcaption>
+</figure>
+<figure class="figure">
+  <img src="media/feynman-plate/verification.png" alt="自转与进动相位随时间的验证图（2:1）" style="width:min(760px,100%)">
+  <figcaption>验证图：自转（蓝）与进动/摇晃（红）的相位圈数随时间线性增长，两直线斜率之比 ≈ 2，与解析结果 2/cosθ 一致。</figcaption>
+</figure>
+<p class="note">模拟与推导均用本地脚本完成：欧拉方程 + 四元数的 RK4 积分（numpy），三维动画与受力分析图由自研渲染器绘制，公式由本地 LaTeX（latex + dvipng，Latin Modern 字体）排版。</p>
+</section>
+
+</main>
+</div>
+
+<footer class="footer">
+  <span>© 2026 Thomas Young · 在方程与风之间</span>
+  <span><a href="about.html">关于</a><a href="archive.html">全站目录</a><a href="https://github.com/youngthomas37-beep">GitHub ↗</a></span>
+</footer>
+</div>
+</body>
+</html>
