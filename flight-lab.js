@@ -29,6 +29,7 @@ let mediaRecorder = null;
 let recordStart = 0;
 let recordAutoRotate = false;
 let recordCanvas = null;
+const canonical = { flights: new Map(), circles: new Map() };
 let recordCtx = null;
 
 const fmt = (n, d = 0) => Number.isFinite(n) ? n.toFixed(d) : '—';
@@ -76,8 +77,11 @@ function parseIGC(text, name) {
     if (!'NS'.includes(ns) || !'EW'.includes(ew)) continue;
     const lat = (+line.slice(7, 9) + (+line.slice(9, 14) / 1000) / 60) * (ns === 'S' ? -1 : 1);
     const lon = (+line.slice(15, 18) + (+line.slice(18, 23) / 1000) / 60) * (ew === 'W' ? -1 : 1);
-    const press = Number.parseInt(line.slice(24, 29), 10);
-    const gps = Number.parseInt(line.slice(29, 34), 10);
+    const hasValidity = line.length >= 35 && (line[24] === 'A' || line[24] === 'V');
+    if (hasValidity && line[24] === 'V') continue;
+    const altOffset = hasValidity ? 1 : 0;
+    const press = Number.parseInt(line.slice(24 + altOffset, 29 + altOffset), 10);
+    const gps = Number.parseInt(line.slice(29 + altOffset, 34 + altOffset), 10);
     const alt = Number.isFinite(gps) && gps !== 0 ? gps : press;
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(alt)) continue;
     if (Math.abs(lat) > 90 || Math.abs(lon) > 180 || alt < -1200 || alt > 10000) continue;
@@ -235,6 +239,64 @@ function publicFlight(item) {
   };
 }
 
+async function loadCanonical() {
+  try {
+    const [flightText, circleText] = await Promise.all([
+      fetch('flight-data/all_143_flights.csv', { cache: 'no-store' }).then(r => r.ok ? r.text() : ''),
+      fetch('flight-data/all_complete_circles.csv', { cache: 'no-store' }).then(r => r.ok ? r.text() : ''),
+    ]);
+    if (flightText) {
+      const lines = flightText.replace(/\r/g, '').split('\n');
+      const header = lines[0].split(',');
+      const idx = name => header.indexOf(name);
+      for (const line of lines.slice(1)) {
+        if (!line.trim()) continue;
+        const cols = line.split(',');
+        if (!cols[idx('file')]) continue;
+        canonical.flights.set(cols[idx('file')].toLowerCase(), {
+          fixes: Number(cols[idx('fixes')]),
+          segments: Number(cols[idx('circling_segments')]),
+          circles: Number(cols[idx('complete_circles')]),
+          maxAlt: Number(cols[idx('max_gps_alt_m')]),
+        });
+      }
+    }
+    if (circleText) {
+      const lines = circleText.replace(/\r/g, '').split('\n');
+      const header = lines[0].split(',');
+      const idx = name => header.indexOf(name);
+      for (const line of lines.slice(1)) {
+        if (!line.trim()) continue;
+        const cols = line.split(',');
+        const file = cols[idx('file')];
+        if (!file) continue;
+        const key = file.toLowerCase();
+        const arr = canonical.circles.get(key) || [];
+        arr.push({
+          duration: Number(cols[idx('duration_s')]),
+          gain: Number(cols[idx('gain_m')]),
+          rate: Number(cols[idx('avg_climb_ms')]),
+          radius: Number(cols[idx('ground_track_equiv_radius_m')]),
+        });
+        canonical.circles.set(key, arr);
+      }
+    }
+  } catch (_) {}
+}
+
+function attachCanonical(f) {
+  const key = String(f.name || '').toLowerCase();
+  const meta = canonical.flights.get(key);
+  if (meta) {
+    f.stats.nCircles = meta.circles;
+    f.stats.circlingSegments = meta.segments;
+    f.stats.canonical = true;
+  }
+  const circles = canonical.circles.get(key);
+  if (circles && circles.length) f.circles = circles;
+  return f;
+}
+
 async function fetchJson(url, options = {}, timeout = 12000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
@@ -291,6 +353,7 @@ async function loadLocal() {
     for (const row of rows) {
       const f = parseIGC(row.text, row.name);
       if (!f) continue;
+      attachCanonical(f);
       f.id = row.id;
       f.source = 'local';
       f.text = row.text;
@@ -403,6 +466,7 @@ async function addFiles(fileList) {
       for (const entry of entries) {
         const f = parseIGC(entry.text, entry.name);
         if (!f) continue;
+        attachCanonical(f);
         try {
           await idbPut({ id: f.id, name: f.name, date: f.date, text: f.text, createdAt: Date.now() });
         } catch (err) {
@@ -433,6 +497,7 @@ async function selectFlight(f) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const parsed = parseIGC(await res.text(), f.name);
       if (!parsed) throw new Error('IGC 格式无效');
+      attachCanonical(parsed);
       Object.assign(f, parsed, { id: f.id, name: f.name, date: f.date || parsed.date, source: 'public', src: f.src, text: null });
       setStatus('公开记录已载入。');
     } catch (err) {
@@ -476,7 +541,7 @@ function renderDetails(f) {
   $('gain').textContent = `${fmt(s.gain)} m`;
   $('nCircles').textContent = String(s.nCircles);
   $('fixes').textContent = String(f.fix.length);
-  $('circleInfo').textContent = s.nCircles ? '自动识别 · 实验性' : '未识别到完整圈';
+  $('circleInfo').textContent = s.canonical ? `Python 校验 · ${s.circlingSegments || '—'} 段` : (s.nCircles ? '自动识别 · 实验性' : '未识别到完整圈');
   const tbody = $('circleRows');
   tbody.innerHTML = '';
   if (!f.circles.length) {
@@ -544,7 +609,7 @@ function initScene() {
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x02060a, 0.012);
   camera = new THREE.PerspectiveCamera(40, host.clientWidth / host.clientHeight, 0.1, 200);
-  camera.position.set(19, 14, 22);
+  camera.position.set(20, 18, 22);
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(host.clientWidth, host.clientHeight);
@@ -556,7 +621,7 @@ function initScene() {
   controls.dampingFactor = 0.08;
   controls.minDistance = 7;
   controls.maxDistance = 62;
-  controls.target.set(0, 3.8, 0);
+  controls.target.set(0, 4.6, 0);
   controls.autoRotateSpeed = 0.55;
 
   scene.add(new THREE.HemisphereLight(0xbde7ff, 0x162b28, 1.05));
@@ -665,8 +730,8 @@ function resizeScene() {
 
 function resetCamera() {
   if (!sceneReady) return;
-  camera.position.set(19, 14, 22);
-  controls.target.set(0, 3.8, 0);
+  camera.position.set(20, 18, 22);
+  controls.target.set(0, 4.6, 0);
   controls.update();
 }
 
@@ -708,7 +773,7 @@ function buildScene(f) {
   const cz = (Math.max(...zs) + Math.min(...zs)) / 2;
   f.scenePoints = raw.map(p => new THREE.Vector3((p.x - cx) * hs, p.y * vs + 0.08, (p.z - cz) * hs));
 
-  const step = Math.max(1, Math.ceil(f.scenePoints.length / 620));
+  const step = Math.max(1, Math.ceil(f.scenePoints.length / 7000));
   const sample = [];
   for (let i = 0; i < f.scenePoints.length; i += step) sample.push({ p: f.scenePoints[i], mode: fix[i].mode });
   if (sample[sample.length - 1].p !== f.scenePoints[f.scenePoints.length - 1]) {
@@ -717,7 +782,7 @@ function buildScene(f) {
   if (sample.length < 2) return;
 
   const curve = new THREE.CatmullRomCurve3(sample.map(s => s.p), false, 'centripetal', 0.5);
-  const tubular = Math.min(760, Math.max(100, sample.length * 2));
+  const tubular = Math.min(3000, Math.max(200, sample.length * 2));
   const radial = 6;
   const geo = new THREE.TubeGeometry(curve, tubular, 0.035, radial, false);
   const colors = new Float32Array(geo.attributes.position.count * 3);
@@ -770,8 +835,8 @@ function buildScene(f) {
   currentMarker.visible = true;
   currentLine.visible = true;
   $('emptyState').hidden = true;
-  camera.position.set(19, 14, 22);
-  controls.target.set(0, 3.8, 0);
+  camera.position.set(20, 18, 22);
+  controls.target.set(0, 4.6, 0);
   controls.update();
 }
 
@@ -1221,6 +1286,7 @@ async function boot() {
   initScene();
   wire();
   drawTelemetry(null, 0);
+  await loadCanonical();
   await Promise.all([loadPublished(), loadLocal()]);
   renderList();
   if (state.flights.length) {
