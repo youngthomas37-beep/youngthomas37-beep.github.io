@@ -29,7 +29,7 @@
     <div class="intro-grid">
       <h1>把一条轨迹，<em>放回天空。</em></h1>
       <div class="intro-copy">
-        <p>导入 IGC，沿着真实的高度与位置重看一次飞行。轨迹按爬升、平飞和下沉着色，下方给出高度、地速与爬升率剖面。</p>
+        <p>导入 IGC，沿着真实的高度与位置重看一次飞行。轨迹按盘旋候选与滑翔着色，下方给出高度、地速与爬升率剖面。</p>
         <div class="intro-chips"><span>浏览器内解析</span><span>不上传服务器</span><span>可导出 3D 视频</span></div>
       </div>
     </div>
@@ -88,10 +88,11 @@
       </div>
 
       <div class="viewport" id="view">
+        <div class="viewport-title" id="viewportTitle" hidden>Thomas Young | — | 3D flight &amp; circling replay</div>
         <div class="viewport-empty" id="emptyState">
           <div class="empty-orb" aria-hidden="true"></div>
           <strong>等待一条轨迹</strong>
-          <span>导入 IGC 后，这里会出现按爬升与下沉着色的三维路径。</span>
+          <span>导入 IGC 后，这里会出现按盘旋与滑翔着色的三维路径。</span>
         </div>
         <div class="hud" id="hud" hidden>
           <div><small>GPS 高度</small><b id="hudAlt">—</b></div>
@@ -99,15 +100,21 @@
           <div><small>爬升率</small><b id="hudClimb">—</b></div>
         </div>
         <div class="legend3d" id="legend3d" hidden>
-          <span><i class="sw sink"></i>下沉</span><span><i class="sw cruise"></i>平飞</span><span><i class="sw climb"></i>爬升</span><span><i class="sw strong"></i>强爬升</span>
+          <span><i class="sw glide"></i>滑翔 / 其他</span>
+          <span><i class="sw circle"></i>盘旋候选</span>
+          <span><i class="sw pilot"></i>当前位置</span>
         </div>
       </div>
 
       <div class="playbar">
         <button type="button" class="btn primary" id="playBtn" disabled>▶ 播放</button>
+        <button type="button" class="btn" id="pauseBtn" disabled>Ⅱ 暂停</button>
         <button type="button" class="btn" id="resetBtn" disabled>回到起点</button>
-        <label class="seek-label" for="seek">进度</label>
-        <input id="seek" type="range" min="0" max="100" value="0" disabled>
+        <div class="seek-wrap">
+          <label class="sr-only" for="seek">飞行回放进度</label>
+          <input id="seek" type="range" min="0" max="100" value="0" disabled>
+          <div class="seek-ticks" id="seekTicks" aria-hidden="true"></div>
+        </div>
         <span class="clock" id="clock">--:--:-- UTC</span>
         <label class="speed-label" for="speed">速度
           <select id="speed" disabled>

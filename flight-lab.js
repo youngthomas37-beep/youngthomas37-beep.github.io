@@ -24,6 +24,8 @@ let resizeObserver = null;
 let mediaRecorder = null;
 let recordStart = 0;
 let recordAutoRotate = false;
+let recordCanvas = null;
+let recordCtx = null;
 
 const fmt = (n, d = 0) => Number.isFinite(n) ? n.toFixed(d) : '—';
 const fmtDuration = (seconds) => {
@@ -402,15 +404,19 @@ async function selectFlight(f) {
   $('flightMeta').textContent = `${f.name} · ${f.source === 'public' ? '公开记录' : '本机记录'}`;
   $('sourceBadge').textContent = f.source === 'public' ? '公开' : '本机';
   $('emptyState').hidden = true;
+  $('viewportTitle').hidden = false;
+  $('viewportTitle').textContent = `Thomas Young | ${f.date || '—'} | 3D flight & circling replay`;
   $('hud').hidden = false;
   $('legend3d').hidden = false;
   $('playBtn').disabled = false;
+  $('pauseBtn').disabled = true;
   $('resetBtn').disabled = false;
   $('seek').disabled = false;
   $('speed').disabled = false;
   $('recordBtn').disabled = false;
   $('seek').max = String(f.fix.length - 1);
   $('seek').value = '0';
+  renderSeekTicks(f);
   renderDetails(f);
   buildScene(f);
   setIndex(0);
@@ -444,20 +450,36 @@ function renderDetails(f) {
   }
 }
 
+function renderSeekTicks(f) {
+  const el = $('seekTicks');
+  el.replaceChildren();
+  if (!f) return;
+  const total = Math.max(0, (f.fix[f.fix.length - 1].t - f.fix[0].t) / 60);
+  const count = 8;
+  for (let i = 0; i <= count; i++) {
+    const span = document.createElement('span');
+    span.textContent = Math.round(total * i / count) + 'm';
+    el.appendChild(span);
+  }
+}
+
 function clearStage() {
   state.current = null;
   $('flightTitle').textContent = '三维彩色轨迹回放';
   $('flightMeta').textContent = '选择左侧的一条飞行记录，或导入新的 IGC。';
   $('sourceBadge').textContent = '—';
   $('emptyState').hidden = false;
+  $('viewportTitle').hidden = true;
   $('hud').hidden = true;
   $('legend3d').hidden = true;
   $('playBtn').disabled = true;
+  $('pauseBtn').disabled = true;
   $('resetBtn').disabled = true;
   $('seek').disabled = true;
   $('speed').disabled = true;
   $('recordBtn').disabled = true;
   $('seek').value = '0';
+  $('seekTicks').replaceChildren();
   ['maxAlt','duration','distance','gain','nCircles','fixes'].forEach(id => $(id).textContent = '—');
   $('circleInfo').textContent = '—';
   $('circleRows').innerHTML = '<tr><td colspan="4">选择飞行后显示</td></tr>';
@@ -475,13 +497,13 @@ function initScene() {
   }
   const host = $('view');
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x071521, 0.014);
+  scene.fog = new THREE.FogExp2(0x02060a, 0.012);
   camera = new THREE.PerspectiveCamera(40, host.clientWidth / host.clientHeight, 0.1, 200);
-  camera.position.set(17, 12.5, 20.5);
+  camera.position.set(19, 14, 22);
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(host.clientWidth, host.clientHeight);
-  renderer.setClearColor(0x071521, 0);
+  renderer.setClearColor(0x02060a, 0);
   renderer.outputEncoding = THREE.sRGBEncoding;
   host.appendChild(renderer.domElement);
   controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -499,24 +521,41 @@ function initScene() {
   fill.position.set(-12, 6, -8); scene.add(fill);
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(60, 60),
-    new THREE.MeshStandardMaterial({ color: 0x071a22, roughness: 0.95, metalness: 0.04, transparent: true, opacity: 0.62 })
+    new THREE.PlaneGeometry(34, 34),
+    new THREE.MeshBasicMaterial({ color: 0x02080c, transparent: true, opacity: 0.78 })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.02;
   scene.add(ground);
-  const grid = new THREE.GridHelper(30, 30, 0x1f5960, 0x123842);
-  grid.material.transparent = true;
-  grid.material.opacity = 0.38;
-  scene.add(grid);
+
+  const addGrid = (size, divisions, color, opacity, rotation, position) => {
+    const g = new THREE.GridHelper(size, divisions, color, color);
+    g.rotation.set(rotation[0], rotation[1], rotation[2]);
+    g.position.set(position[0], position[1], position[2]);
+    g.material.transparent = true;
+    g.material.opacity = opacity;
+    g.material.depthWrite = false;
+    scene.add(g);
+    return g;
+  };
+  addGrid(24, 12, 0x2b4d56, 0.62, [0, 0, 0], [0, 0.01, 0]);
+  addGrid(24, 12, 0x24454e, 0.34, [Math.PI / 2, 0, 0], [0, 6, -12]);
+  addGrid(24, 12, 0x24454e, 0.30, [0, 0, Math.PI / 2], [-12, 6, 0]);
+
+  const northLabel = makeTextSprite('North (m)', '#e4eef0', 1.15);
+  northLabel.position.set(0, 0.35, -10.6); scene.add(northLabel);
+  const eastLabel = makeTextSprite('East (m)', '#a9bcc1', 1.05);
+  eastLabel.position.set(13.4, 0.22, 0); scene.add(eastLabel);
+  const altLabel = makeTextSprite('GPS altitude (m)', '#a9bcc1', 1.05);
+  altLabel.position.set(-13.4, 4.6, 0); scene.add(altLabel);
 
   pathGroup = new THREE.Group();
   scene.add(pathGroup);
 
   currentMarker = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 18), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.20, 18, 18), new THREE.MeshBasicMaterial({ color: 0xffb21a }));
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: makeGlowTexture(), color: 0xb8fff1, transparent: true, opacity: 0.9,
+    map: makeGlowTexture(), color: 0xffb21a, transparent: true, opacity: 0.9,
     blending: THREE.AdditiveBlending, depthWrite: false,
   }));
   halo.scale.set(1.8, 1.8, 1);
@@ -525,7 +564,7 @@ function initScene() {
   scene.add(currentMarker);
 
   currentLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
-  currentLine = new THREE.Line(currentLineGeo, new THREE.LineBasicMaterial({ color: 0x8ae8d9, transparent: true, opacity: 0.45 }));
+  currentLine = new THREE.Line(currentLineGeo, new THREE.LineBasicMaterial({ color: 0xffb21a, transparent: true, opacity: 0.42 }));
   currentLine.visible = false;
   scene.add(currentLine);
 
@@ -549,6 +588,28 @@ function makeGlowTexture() {
   return new THREE.CanvasTexture(c);
 }
 
+function makeTextSprite(text, color, scale) {
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  const font = '500 28px system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.font = font;
+  const width = Math.ceil(ctx.measureText(text).width) + 24;
+  c.width = width; c.height = 52;
+  ctx.font = font;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, width / 2, 27);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: tex, transparent: true, depthTest: false, depthWrite: false, fog: false,
+  }));
+  sprite.scale.set((width / 52) * scale, scale, 1);
+  sprite.renderOrder = 20;
+  return sprite;
+}
+
 function resizeScene() {
   if (!sceneReady || !renderer || !camera) return;
   const host = $('view');
@@ -559,7 +620,7 @@ function resizeScene() {
 
 function resetCamera() {
   if (!sceneReady) return;
-  camera.position.set(17, 12.5, 20.5);
+  camera.position.set(19, 14, 22);
   controls.target.set(0, 3.8, 0);
   controls.update();
 }
@@ -576,24 +637,8 @@ function clearPath() {
   pathGroup.clear();
 }
 
-function colorForClimb(v) {
-  const stops = [
-    [-2.8, [0xff, 0x5a, 0x3c]],
-    [-0.2, [0xfa, 0xaa, 0x46]],
-    [0.15, [0x38, 0xbd, 0xf8]],
-    [0.8, [0x22, 0xc5, 0x5e]],
-    [2.6, [0xa3, 0xe6, 0x35]],
-  ];
-  const x = clamp(v, -2.8, 2.8);
-  let i = 0;
-  while (i < stops.length - 2 && x > stops[i + 1][0]) i++;
-  const [a, ca] = stops[i], [b, cb] = stops[i + 1];
-  const t = clamp((x - a) / (b - a || 1), 0, 1);
-  return new THREE.Color(
-    (ca[0] + (cb[0] - ca[0]) * t) / 255,
-    (ca[1] + (cb[1] - ca[1]) * t) / 255,
-    (ca[2] + (cb[2] - ca[2]) * t) / 255
-  ).convertSRGBToLinear();
+function modeColor(mode) {
+  return new THREE.Color(mode ? 0x19d38a : 0x3b9cff).convertSRGBToLinear();
 }
 
 function buildScene(f) {
@@ -620,9 +665,9 @@ function buildScene(f) {
 
   const step = Math.max(1, Math.ceil(f.scenePoints.length / 620));
   const sample = [];
-  for (let i = 0; i < f.scenePoints.length; i += step) sample.push({ p: f.scenePoints[i], climb: fix[i].climb });
+  for (let i = 0; i < f.scenePoints.length; i += step) sample.push({ p: f.scenePoints[i], mode: fix[i].mode });
   if (sample[sample.length - 1].p !== f.scenePoints[f.scenePoints.length - 1]) {
-    sample.push({ p: f.scenePoints[f.scenePoints.length - 1], climb: fix[fix.length - 1].climb });
+    sample.push({ p: f.scenePoints[f.scenePoints.length - 1], mode: fix[fix.length - 1].mode });
   }
   if (sample.length < 2) return;
 
@@ -635,7 +680,7 @@ function buildScene(f) {
   for (let i = 0; i < geo.attributes.position.count; i++) {
     const seg = Math.min(tubular, Math.floor(i / per));
     const idx = Math.min(sample.length - 1, Math.round(seg / tubular * (sample.length - 1)));
-    const c = colorForClimb(sample[idx].climb);
+    const c = modeColor(sample[idx].mode);
     colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -650,7 +695,7 @@ function buildScene(f) {
   const shadowPts = f.scenePoints.map(p => new THREE.Vector3(p.x, 0.012, p.z));
   pathGroup.add(new THREE.Line(
     new THREE.BufferGeometry().setFromPoints(shadowPts),
-    new THREE.LineBasicMaterial({ color: 0x2e7f88, transparent: true, opacity: 0.48 })
+    new THREE.LineBasicMaterial({ color: 0x245b78, transparent: true, opacity: 0.42 })
   ));
 
   const drops = [];
@@ -661,11 +706,11 @@ function buildScene(f) {
   }
   pathGroup.add(new THREE.LineSegments(
     new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(drops, 3)),
-    new THREE.LineBasicMaterial({ color: 0x2f7e86, transparent: true, opacity: 0.18 })
+    new THREE.LineBasicMaterial({ color: 0x2b5b6b, transparent: true, opacity: 0.16 })
   ));
 
-  addMarker(f.scenePoints[0], 0x77e5a8, 0.18);
-  addMarker(f.scenePoints[f.scenePoints.length - 1], 0xf3a35d, 0.18);
+  addMarker(f.scenePoints[0], 0x3b9cff, 0.14);
+  addMarker(f.scenePoints[f.scenePoints.length - 1], 0xffb21a, 0.16);
 
   for (let k = 1; k <= 5; k++) {
     const i = Math.min(f.scenePoints.length - 2, Math.floor((f.scenePoints.length - 1) * k / 6));
@@ -680,7 +725,7 @@ function buildScene(f) {
   currentMarker.visible = true;
   currentLine.visible = true;
   $('emptyState').hidden = true;
-  camera.position.set(17, 12.5, 20.5);
+  camera.position.set(19, 14, 22);
   controls.target.set(0, 3.8, 0);
   controls.update();
 }
@@ -726,6 +771,7 @@ function animate() {
     }
   }
   renderer.render(scene, camera);
+  if (state.recording) drawVideoFrame();
 }
 
 function indexAtTime(f, t) {
@@ -759,17 +805,19 @@ function setIndex(value) {
 
 function pause() {
   state.playing = false;
-  $('playBtn').textContent = '▶ 播放';
+  const play = $('playBtn'), pause = $('pauseBtn');
+  if (play) play.textContent = '▶ 播放';
+  if (pause) pause.disabled = true;
 }
 
-function togglePlay() {
-  if (!state.current || state.recording) return;
-  if (state.playing) { pause(); return; }
+function startPlay() {
+  if (!state.current || state.recording || state.playing) return;
   if (state.index >= state.current.fix.length - 1) state.index = 0;
   state.playT0 = state.current.fix[Math.round(state.index)].t;
   state.playStart = performance.now();
   state.playing = true;
-  $('playBtn').textContent = '⏸ 暂停';
+  $('playBtn').textContent = '▶ 播放';
+  $('pauseBtn').disabled = false;
 }
 
 /* ---------- telemetry chart ---------- */
@@ -874,6 +922,45 @@ function drawTelemetry(f, index) {
 }
 
 /* ---------- recording ---------- */
+function drawVideoFrame() {
+  if (!recordCtx || !state.current || !renderer) return;
+  const W = recordCanvas.width, H = recordCanvas.height;
+  const ctx = recordCtx;
+  ctx.fillStyle = '#02060a';
+  ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(renderer.domElement, 0, 0, W, H);
+  const pad = Math.round(W * 0.026);
+  const titleSize = Math.max(13, Math.round(W / 62));
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.font = `500 ${titleSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+  ctx.fillStyle = '#edf5f6';
+  ctx.fillText(`Thomas Young | ${state.current.date} | 3D flight & circling replay`, pad, pad);
+
+  const legend = [['滑翔 / 其他', '#4da3ff'], ['盘旋候选', '#19d38a'], ['当前位置', '#ffb21a']];
+  const legendSize = Math.max(11, Math.round(W / 92));
+  ctx.font = `500 ${legendSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  let ly = pad + legendSize / 2;
+  for (const [label, color] of legend) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(W - pad - 8, ly, Math.max(3, legendSize * 0.28), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#dfecee';
+    ctx.fillText(label, W - pad - 18, ly);
+    ly += legendSize + 12;
+  }
+
+  const p = state.current.fix[Math.round(state.index)] || state.current.fix[0];
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.font = `500 ${legendSize}px ui-monospace, SFMono-Regular, Consolas, monospace`;
+  ctx.fillStyle = '#cfe1e3';
+  ctx.fillText(`${Math.round(p.alt)} m  ·  ${p.speed.toFixed(1)} km/h  ·  ${p.climb >= 0 ? '+' : ''}${p.climb.toFixed(2)} m/s`, pad, H - pad);
+}
+
 function stopRecording() {
   if (!state.recording || !mediaRecorder) return;
   state.recording = false;
@@ -885,14 +972,20 @@ function stopRecording() {
 
 function recordVideo() {
   if (!state.current || state.recording) return;
-  if (!renderer || !renderer.domElement.captureStream || !window.MediaRecorder) {
+  if (!renderer || !window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
     setStatus('当前浏览器不支持 canvas 视频录制，请使用 Chrome / Edge。');
     return;
   }
   const types = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
   const mime = types.find(t => MediaRecorder.isTypeSupported(t));
   if (!mime) { setStatus('当前浏览器没有可用的 WebM 录制编码。'); return; }
-  const stream = renderer.domElement.captureStream(30);
+  recordCanvas = document.createElement('canvas');
+  recordCanvas.width = renderer.domElement.width;
+  recordCanvas.height = renderer.domElement.height;
+  recordCtx = recordCanvas.getContext('2d');
+  renderer.render(scene, camera);
+  drawVideoFrame();
+  const stream = recordCanvas.captureStream(30);
   const chunks = [];
   try {
     mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5_000_000 });
@@ -908,6 +1001,8 @@ function recordVideo() {
     const safe = (state.current?.date || 'flight').replace(/[^0-9A-Za-z-]/g, '-');
     a.href = url; a.download = `flight-${safe}-3d.webm`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 3000);
+    recordCanvas = null;
+    recordCtx = null;
     setStatus('3D 视频已生成并开始下载。', 'ok');
   };
   pause();
@@ -937,7 +1032,8 @@ function wire() {
     document.querySelectorAll('[data-filter]').forEach(b => b.classList.toggle('active', b === btn));
     renderList();
   }));
-  $('playBtn').addEventListener('click', togglePlay);
+  $('playBtn').addEventListener('click', startPlay);
+  $('pauseBtn').addEventListener('click', pause);
   $('resetBtn').addEventListener('click', () => { pause(); setIndex(0); });
   $('seek').addEventListener('input', e => { pause(); setIndex(Number(e.target.value)); });
   $('speed').addEventListener('change', e => { state.speed = Number(e.target.value); });
