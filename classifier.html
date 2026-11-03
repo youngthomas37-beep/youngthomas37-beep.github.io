@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BERT 情感分类器</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; background: #f5f7fa; color: #1f2937; }
+  h1 { font-size: 22px; margin-bottom: 6px; }
+  .sub { color: #6b7280; font-size: 14px; margin-top: 0; }
+  textarea { width: 100%; height: 90px; padding: 12px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; resize: vertical; }
+  button { margin-top: 10px; padding: 10px 24px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; }
+  button:disabled { background: #93c5fd; cursor: default; }
+  #status { margin: 12px 0; color: #6b7280; font-size: 14px; }
+  #result { margin-top: 14px; font-size: 17px; }
+  .bar { height: 16px; border-radius: 8px; background: #e5e7eb; overflow: hidden; margin-top: 6px; }
+  .fill { height: 100%; background: #2563eb; transition: width .3s; }
+</style>
+</head>
+<body>
+  <h1>🤖 BERT 情感分类器</h1>
+  <p class="sub">输入一句英文，模型在浏览器本地运行（无需服务器，电脑关机也能用）。</p>
+  <textarea id="input" placeholder="例如：This movie was amazing!"></textarea>
+  <button id="go" disabled>分类</button>
+  <div id="status">正在加载模型（约 110MB，首次较慢，之后浏览器会缓存）…</div>
+  <div id="result"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "@huggingface/transformers": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/+esm"
+  }
+}
+</script>
+<script type="module">
+import { pipeline, env } from '@huggingface/transformers';
+
+// 国内走 hf-mirror 镜像更快；如访问国外可改成 'https://huggingface.co'
+env.remoteHost = 'https://hf-mirror.com';
+
+const status = document.getElementById('status');
+const result = document.getElementById('result');
+const input = document.getElementById('input');
+const go = document.getElementById('go');
+
+let classifier = null;
+
+async function load() {
+  classifier = await pipeline('text-classification', 'ThomasYoung101/bert-sentiment-onnx');
+  status.textContent = '模型已就绪 ✅';
+  go.disabled = false;
+}
+
+async function run() {
+  const text = input.value.trim();
+  if (!text) return;
+  go.disabled = true;
+  const out = await classifier(text);
+  const top = out[0];
+  const pct = (top.score * 100).toFixed(1);
+  result.innerHTML =
+    '<div>结果：<b>' + top.label + '</b>（置信度 ' + pct + '%）</div>' +
+    '<div class="bar"><div class="fill" style="width:' + pct + '%"></div></div>';
+  go.disabled = false;
+}
+
+go.addEventListener('click', run);
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); } });
+
+load().catch(e => { status.textContent = '加载失败：' + e.message; });
+</script>
+</body>
+</html>
