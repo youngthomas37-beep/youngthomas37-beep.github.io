@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>谣言检测助手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b45309">
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; max-width: 640px; margin: 30px auto; padding: 0 20px; background: #faf9f7; color: #292d2c; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #777; font-size: 13px; margin-top: 0; }
+  textarea { width: 100%; height: 110px; padding: 12px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; resize: vertical; }
+  button { margin-top: 10px; padding: 10px 24px; background: #b45309; color: #fff; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; }
+  button:disabled { background: #d4a574; cursor: default; }
+  #status { margin: 12px 0; color: #777; font-size: 13px; }
+  #result { margin-top: 14px; font-size: 17px; }
+  .bar { height: 16px; border-radius: 8px; background: #e5e7eb; overflow: hidden; margin-top: 6px; }
+  .fill { height: 100%; transition: width .3s; }
+  .rumor .fill { background: #b45309; }
+  .nonrumor .fill { background: #16a34a; }
+  .note { margin-top: 22px; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 10px; line-height: 1.7; }
+</style>
+</head>
+<body>
+  <h1>🕵️ 谣言检测助手</h1>
+  <p class="sub">粘贴一段文字，快速判断是否像谣言。</p>
+  <textarea id="input" placeholder="粘贴要检测的文字…"></textarea>
+  <button id="go" disabled>检测</button>
+  <div id="status">正在加载模型（约 98MB，首次较慢，之后浏览器会缓存）…</div>
+  <div id="result"></div>
+  <div class="note">⚠️ 本工具基于「文本风格」做疑似谣言初筛，<b>不会查证事实</b>，结果仅供参考，非权威判定。</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "@huggingface/transformers": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/+esm"
+  }
+}
+</script>
+<script type="module">
+import { pipeline, env } from '@huggingface/transformers';
+
+// 国内走 hf-mirror 镜像；国外可改成 'https://huggingface.co'
+env.remoteHost = 'https://hf-mirror.com';
+
+const status = document.getElementById('status');
+const result = document.getElementById('result');
+const input = document.getElementById('input');
+const go = document.getElementById('go');
+const LABEL_CN = { '谣言': '谣言', '非谣言': '非谣言', 'LABEL_0': '非谣言', 'LABEL_1': '谣言', '0': '非谣言', '1': '谣言' };
+
+let classifier = null;
+
+async function load() {
+  classifier = await pipeline('text-classification', 'ThomasYoung101/bert-rumor-onnx');
+  status.textContent = '模型已就绪 ✅';
+  go.disabled = false;
+}
+
+async function run(text) {
+  text = (text || input.value).trim();
+  if (!text) return;
+  if (!classifier) { status.textContent = '模型还在加载，请稍候…'; return; }
+  go.disabled = true;
+  const out = await classifier(text);
+  const top = out[0];
+  const pct = (top.score * 100).toFixed(1);
+  const label = LABEL_CN[top.label] || top.label;
+  const isRumor = label === '谣言';
+  result.className = isRumor ? 'rumor' : 'nonrumor';
+  result.innerHTML =
+    '<div>判断结果：<b>' + label + '</b>（置信度 ' + pct + '%）</div>' +
+    '<div class="bar"><div class="fill" style="width:' + pct + '%"></div></div>';
+  go.disabled = false;
+}
+
+go.addEventListener('click', () => run());
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) run(); });
+
+// 从 URL ?text= 读取（供浏览器插件传入）
+const q = new URLSearchParams(location.search).get('text');
+if (q) { input.value = q; }
+
+load().then(() => { if (q) run(q); }).catch(e => { status.textContent = '加载失败：' + e.message; });
+
+// 注册 Service Worker（PWA）
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
