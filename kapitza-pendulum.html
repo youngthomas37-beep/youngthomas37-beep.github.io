@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="卡皮查摆：倒立摆被竖直高频振动稳定化。拉格朗日量、运动方程、快慢分离、等效势能与稳定性条件。">
+<meta name="theme-color" content="#f6f4ee">
+<title>卡皮查摆 · Thomas Young</title>
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+<style>
+  .equation{text-align:center;margin:22px 0}
+  .equation img{max-width:100%;height:auto;vertical-align:middle}
+  .figure{margin:28px 0;text-align:center}
+  .figure img{display:block;margin:0 auto;max-width:100%;height:auto;border:1px solid var(--line);background:#fff}
+  .figure figcaption{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.9;text-align:left}
+  .figure.plain img{border:0;background:transparent}
+  .result-box{background:var(--wash);border-left:3px solid var(--rust);padding:18px 22px;margin:22px 0;overflow-wrap:anywhere}
+  .result-box p{margin:4px 0;color:#4d554e}
+  .result-box strong{color:var(--ink);font-weight:600}
+  .paramline{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+  .article .lead{color:var(--ink);font-size:15px}
+  .table-wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<div class="site">
+<header class="masthead">
+  <a class="wordmark" href="index.html">Thomas Young<small>一 个 人 的 探 索 札 记</small></a>
+  <span class="mastnote">在方程与风之间</span>
+</header>
+<nav class="topnav" aria-label="主导航">
+  <a href="index.html">首页</a>
+  <a href="play.html">← 趣味实验室</a>
+  <a href="#theory">方程与推导</a>
+  <a href="#simulation">数值模拟与动画</a>
+</nav>
+
+<div class="shell">
+<aside class="sidebar">
+  <div class="sidebar-inner">
+    <div class="side-label">CONTENTS / 目录</div>
+    <nav aria-label="栏目目录">
+      <a href="research.html"><span class="idx">01</span><span>理论物理与数学</span></a>
+      <a href="play.html"><span class="idx">02</span><span>趣味实验室</span></a>
+      <a href="flight.html"><span class="idx">03</span><span>滑翔伞影像</span></a>
+      <a href="apps.html"><span class="idx">04</span><span>小程序工坊</span></a>
+      <a href="crypto.html"><span class="idx">05</span><span>加密货币探索</span></a>
+      <a href="notes.html"><span class="idx">06</span><span>札记与书架</span></a>
+    </nav>
+    <div class="side-box">
+      <div class="side-label">ABOUT THIS SPACE</div>
+      <p>从纸上的推演，到屏幕里的实验，再到天空中的片刻。把值得留存的过程，慢慢记录下来。</p>
+      <a href="about.html">关于我与这里 ↗</a>
+    </div>
+    <div class="side-box">
+      <div class="side-label">INDEX / 索引</div>
+      <p><a href="archive.html">全站目录</a>　·　<a href="index.html#updates">更新记录</a><br><a href="https://github.com/youngthomas37-beep">GitHub ↗</a></p>
+    </div>
+    <div class="side-marker"></div>
+    <p class="note">内容慢慢累积，<br>问题始终开放。</p>
+  </div>
+</aside>
+
+<main class="content" id="main">
+<div class="breadcrumb"><a href="index.html">首页</a> / <a href="play.html">趣味实验室</a> / 卡皮查摆</div>
+
+<header class="page-intro">
+  <div class="kicker">02 / PLAY &amp; MAKE · VIBRATIONAL MECHANICS</div>
+  <h1>卡皮查摆</h1>
+  <p class="lead">苏联物理学家、诺贝尔奖得主彼得·卡皮查提出的经典问题：一个倒立摆，支点朝上、摆锤朝上，本来极不稳定，一碰就倒。但如果你让<strong>悬挂点做竖直方向的高频小振幅振动</strong>，倒立位置竟会变成稳定平衡——摆锤能被「钉」在支点正上方，只做微小摆动。这背后的「高频振动凭空造出稳定平衡」的机制，与离子阱、磁悬浮的稳定是同一个原理。</p>
+</header>
+
+<section class="article">
+<h2>一、模型与受力分析</h2>
+<p>刚性摆，质量 m、杆长 l，重力场 g。悬挂点（支点）沿竖直方向做高频小振幅振动：</p>
+<div class="equation"><img src="media/kapitza-pendulum/eq/eq01.png" alt="悬挂点竖直振动 y(t)=a·cos(ωt)"></div>
+<p>其中 ω 很大（远大于摆的自然频率）、a 很小。摆锤相对支点的位置由角度 θ 描述（θ = 0 为竖直向下，θ = π 为竖直向上、即倒立）。</p>
+<figure class="figure plain">
+  <img src="media/kapitza-pendulum/diagram.png" alt="卡皮查摆受力/运动示意图">
+  <figcaption>示意图：悬挂点做竖直振动 a·cos(ωt)，倒立摆（θ ≈ π）被稳定在支点上方。重力 mg 始终试图把摆拉倒，但高频振动的「平均效应」在倒立位置制造出一个等效势能谷。</figcaption>
+</figure>
+<p>忽略支点振动的动能项（只含时间的项不影响运动方程），拉格朗日量为：</p>
+<div class="equation"><img src="media/kapitza-pendulum/eq/eq02.png" alt="拉格朗日量"></div>
+</section>
+
+<section class="article" id="theory">
+<h2>二、运动方程</h2>
+<p>由欧拉–拉格朗日方程得到完整的运动方程（<strong>未做任何近似</strong>）：</p>
+<div class="equation"><img src="media/kapitza-pendulum/eq/eq03.png" alt="完整运动方程"></div>
+<p>右边第二项来自支点的振动。可以把它看成时变的「等效重力」：</p>
+<div class="equation"><img src="media/kapitza-pendulum/eq/eq04.png" alt="等效重力 g_eff(t)"></div>
+<p>当 a·ω<sup>2</sup>·cos(ωt) &gt; g 时，等效重力瞬时反向——支点向上的加速度超过重力，摆锤被「推」向倒立方向。这正是倒立能稳定的直觉来源。</p>
+</section>
+
+<section class="article">
+<h2>三、快慢分离与等效势能</h2>
+<p>卡皮查的关键思想是把运动拆成「慢」与「快」两部分：</p>
+<div class="equation"><img src="media/kapitza-pendulum/eq/eq05.png" alt="快慢分离"></div>
+<p>其中 ξ 是支点振动驱动的小幅高频抖动（≈ (a/l)·sinθ 量级），Θ 是慢变量。对完整运动方程在一个高频周期内做平均，快变量被消掉，得到慢变量的运动方程：</p>
+<div class="equation"><img src="media/kapitza-pendulum/eq/eq06.png" alt="平均化后的慢运动方程"></div>
+<p>这个方程等价于一个「慢摆」在等效势能里运动：</p>
+<div class="equation"><img src="media/kapitza-pendulum/eq/eq07.png" alt="等效势能"></div>
+<p>第一项是重力势能（倒立位置 θ = π 是极大值，不稳定）；第二项来自高频振动的平均效应，它在 θ = 0 和 θ = π 处都取极小、在 θ = π/2 处取极大。把第二项叠加到第一项上，倒立位置从「山尖」被压成「谷底」——条件就是：</p>
+<div class="equation"><img src="media/kapitza-pendulum/eq/eq08.png" alt="稳定性条件 a^2·ω^2 > 2gl"></div>
+<div class="result-box">
+  <p><strong>卡皮查稳定性条件：</strong>当 a<sup>2</sup>ω<sup>2</sup> &gt; 2gl 时，倒立位置 θ = π 是等效势能的<strong>局部极小</strong>，倒立摆被稳定。等价地，悬挂点的峰值速度 a·ω 需超过 √(2gl)。</p>
+</div>
+<figure class="figure">
+  <img src="media/kapitza-pendulum/effective_potential.png" alt="等效势能曲线">
+  <figcaption>等效势能 U<sub>eff</sub>(θ) 随振动强度 a<sup>2</sup>ω<sup>2</sup> 的变化：无振动（a<sup>2</sup>ω<sup>2</sup>=0）时只有 θ=0 一个谷；a<sup>2</sup>ω<sup>2</sup> 超过阈值 2gl 后，倒立点 θ=π 从峰变成谷（双势阱）。</figcaption>
+</figure>
+</section>
+
+<section class="article" id="simulation">
+<h2>四、数值模拟与动画</h2>
+<p>为验证上面的近似推导，我用 4 阶 Runge–Kutta 直接积分<strong>完整运动方程</strong>（不引入快慢分离近似），无量纲取 g = l = 1，初始都放在近倒立位置 θ = π − 0.1。</p>
+<div class="table-wrap">
+<table class="guide-table">
+<tr><th>情形</th><th>参数</th><th>a<sup>2</sup>ω<sup>2</sup></th><th>结果</th></tr>
+<tr><td>强振动</td><td>a = 0.05, ω = 40</td><td>4.00</td><td>倒立稳定（θ 均值 ≈ 1.00π，摆幅 0.2 rad）</td></tr>
+<tr><td>弱振动</td><td>a = 0.02, ω = 40</td><td>0.64</td><td>倒下</td></tr>
+<tr><td>无振动</td><td>a = 0</td><td>0</td><td>倒下</td></tr>
+</table>
+</div>
+<figure class="figure">
+  <img src="media/kapitza-pendulum/theta_vs_time.png" alt="角度随时间演化">
+  <figcaption>角度 θ(t) 的数值解：三组初值相同（θ = π − 0.1）。只有强振动（a<sup>2</sup>ω<sup>2</sup>=4&gt;2）的摆留在倒立位置附近小幅摆动；弱振动和无振动都迅速倒下到 θ ≈ 0。</figcaption>
+</figure>
+<figure class="figure">
+  <img src="media/kapitza-pendulum/animation.gif" alt="卡皮查摆双栏对比动画" style="width:min(680px,100%)">
+  <figcaption>双栏对比动画：左栏悬挂点竖直振动、倒立摆被稳定在支点上方；右栏无振动、倒立摆倒下。两组初值完全相同，唯一差别是支点是否振动。</figcaption>
+</figure>
+<p class="note">模拟与推导均用本地脚本完成：完整运动方程的 RK4 积分（numpy），示意图与二维动画由自研渲染器绘制，公式由本地 LaTeX（latex + dvipng，Latin Modern 字体）排版。</p>
+</section>
+
+</main>
+</div>
+
+<footer class="footer">
+  <span>© 2026 Thomas Young · 在方程与风之间</span>
+  <span><a href="about.html">关于</a><a href="archive.html">全站目录</a><a href="https://github.com/youngthomas37-beep">GitHub ↗</a></span>
+</footer>
+</div>
+</body>
+</html>
