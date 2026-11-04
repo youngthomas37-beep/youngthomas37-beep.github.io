@@ -1,0 +1,107 @@
+/* 滑翔伞原理页面 */
+.principles-intro{padding-bottom:30px}
+.principles-intro h1{font-size:clamp(38px,5vw,54px);margin:10px 0 8px}
+.principles-intro p{max-width:700px;line-height:2.05}
+.principles-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.principles-meta span{font-size:10px;letter-spacing:.06em;color:#5d6c62;border:1px solid #cdd8cb;border-radius:999px;padding:4px 9px;background:#f8f8f1}
+.principles-section{scroll-margin-top:24px}
+.principles-section h2{font-size:clamp(24px,3vw,30px);letter-spacing:.03em}
+.principles-section .lead{font-size:15px;line-height:2.15;color:#58635a;max-width:760px}
+.principles-section h3{font:600 16px/1.5 var(--serif);margin:0 0 8px;color:var(--ink)}
+.side-toc{display:grid;gap:1px;margin-top:12px}
+.side-toc a{font-size:11px;color:#5d6c62;padding:5px 0;border-bottom:1px dotted var(--line)}
+.side-toc a:hover{color:var(--green)}
+.airfoil-figure{margin:24px 0 8px;border:1px solid var(--line);background:#fbfaf3;padding:8px;box-shadow:0 12px 30px #26332a0a}
+.airfoil-figure svg{display:block;width:100%;height:auto}
+.diagram-hint{display:none;font-size:10px;color:var(--muted);padding:4px 10px 0}
+.airfoil-figure figcaption{font-size:11px;color:var(--muted);line-height:1.8;padding:9px 10px 4px;border-top:1px solid #e7e8dc;margin-top:4px}
+.formula-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin:22px 0}
+.formula-strip div{background:#f8f8f1;padding:13px 14px;min-width:0}
+.formula-label{display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);margin-bottom:5px}
+.formula-strip code{font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--green);white-space:nowrap}
+.principle-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:25px 0 4px}
+.principle-cards article{border-top:1px solid var(--line);padding-top:14px}
+.principle-num{font:italic 20px/1 Georgia,serif;color:#a9b49e;margin-bottom:10px}
+.principle-cards p{font-size:13px;line-height:1.95;margin:0}
+.polar-layout{display:grid;grid-template-columns:minmax(0,1fr) 275px;gap:20px;align-items:start;margin:22px 0 18px}
+.polar-card{border:1px solid var(--line);background:#fbfaf3;min-width:0}
+.polar-toolbar{display:flex;gap:1px;border-bottom:1px solid var(--line);padding:7px 8px 0;background:#f3f4eb}
+.polar-tab{border:1px solid transparent;border-bottom:0;background:transparent;color:#6d786b;font-size:11px;padding:7px 10px;border-radius:3px 3px 0 0}
+.polar-tab.active{background:#fbfaf3;border-color:var(--line);color:var(--green);font-weight:600}
+.polar-canvas-wrap{position:relative;padding:8px 10px 0}
+#polarChart{display:block;width:100%;height:390px}
+.polar-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:10px;color:#68756b;padding:0 14px 10px}
+.polar-legend span{display:inline-flex;align-items:center;gap:5px}
+.legend-line{width:15px;height:2px;background:var(--green);display:inline-block}
+.legend-line.amber{background:#c58a45}
+.legend-dot{width:6px;height:6px;border-radius:50%;background:#a16b4d;display:inline-block}
+.chart-note{font-size:10px;line-height:1.7;color:var(--muted);padding:0 14px 12px;margin:0}
+.polar-side{padding:0;display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
+.polar-stat{background:#fbfaf3;padding:10px 12px;display:grid;gap:2px;min-width:0}
+.polar-stat span{font-size:10px;color:var(--muted);letter-spacing:.03em}
+.polar-stat b{font:600 19px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--green);white-space:nowrap}
+.polar-stat small{font-size:10px;color:#899287;line-height:1.5}
+.command-box{background:#182923;color:#dff4e8;margin:0;padding:12px 13px;overflow:auto;font:10px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace;border-left:3px solid #7bb8a4}
+.polar-side .quiet-link{background:#fbfaf3;padding:9px 12px;font-size:11px}
+.callout{border-left:2px solid #a16b4d;background:#f2eee5;padding:13px 16px;font-size:12px;line-height:1.95;color:#5f675c;margin:16px 0 0}
+.callout strong{color:#7d4a35;font-weight:600}
+.sim-shell{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;margin:22px 0 3px;align-items:stretch}
+.sim-stage{position:relative;background:radial-gradient(ellipse at 55% 30%,#123844 0,#071923 55%,#030b10 100%);border:1px solid #203d43;overflow:hidden;min-height:470px}
+#simCanvas{display:block;width:100%;height:100%;position:absolute;inset:0}
+.sim-badge{position:absolute;left:12px;top:12px;background:#071721b8;border:1px solid #42656a66;color:#cfe6df;font-size:10px;letter-spacing:.08em;padding:5px 8px;border-radius:4px;backdrop-filter:blur(6px)}
+.sim-badge.landed{color:#ffd0a0;border-color:#a35c3d99}
+.sim-hint{position:absolute;left:12px;bottom:10px;right:12px;color:#9db8b7;font-size:10px;line-height:1.6;text-shadow:0 1px 4px #000;pointer-events:none}
+.sim-panel{background:#fbfaf3;border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.sim-gauges{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+.sim-gauges div{background:#f7f7ef;padding:8px 9px;min-width:0}
+.sim-gauges span{display:block;font-size:9px;color:var(--muted);letter-spacing:.02em}
+.sim-gauges b{display:block;font:600 15px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;color:#315347;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sim-control{display:block;font-size:10px;color:#657267}
+.sim-control span{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.sim-control output{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--green)}
+.sim-control input{width:100%;accent-color:var(--green);margin:0}
+.sim-buttons{display:flex;gap:5px;flex-wrap:wrap}
+.sim-btn{border:1px solid #c8cdbf;background:#fffdf7;color:#3d4d43;font-size:10px;padding:6px 8px;border-radius:3px}
+.sim-btn:hover{background:#edf2e8;border-color:#9fb29d}
+.sim-note{border-top:1px solid var(--line);padding-top:9px;font-size:10px;color:var(--muted);line-height:1.75}
+.sim-note summary{cursor:pointer;color:#4d6657;font-weight:600}
+.sim-note p{margin:7px 0 0}
+.reading-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+.reading-card{border-top:1px solid var(--line);padding-top:13px;min-width:0}
+.reading-kicker{font-size:9px;letter-spacing:.14em;color:#9a7357;margin-bottom:5px}
+.reading-card h3{font-size:16px;margin:0 0 7px}
+.reading-card ul{padding-left:17px;margin:0}
+.reading-card li{font-size:12px;line-height:1.7;margin:6px 0;color:#657064}
+.reading-card a{color:var(--green);text-decoration:underline;text-underline-offset:3px}
+.reading-card small{font-size:10px;color:#8b948a}
+.reading-note{font-size:10px;line-height:1.7;color:var(--muted);margin:9px 0 0}
+.keywords{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:24px;border-top:1px solid var(--line);padding-top:14px}
+.keywords span{font-size:10px;letter-spacing:.1em;color:var(--muted);margin-right:4px}
+.keywords code{font-size:9px;color:#5f6d62;background:#edeFE6;border:1px solid #dfe2d6;padding:3px 6px;border-radius:2px}
+.boundaries p{max-width:760px}
+@media(max-width:900px){
+  .polar-layout{grid-template-columns:1fr}
+  .polar-side{grid-template-columns:1fr 1fr}
+  .polar-side .command-box{grid-column:1/-1}
+  .sim-shell{grid-template-columns:1fr}
+  .sim-stage{min-height:430px}
+  .principle-cards{grid-template-columns:1fr 1fr}
+}
+@media(max-width:660px){
+  .principles-intro h1{font-size:35px}
+  .formula-strip{grid-template-columns:1fr 1fr}
+  .principle-cards,.reading-grid{grid-template-columns:1fr}
+  .polar-side{grid-template-columns:1fr 1fr}
+  .sim-stage{min-height:380px}
+  .sim-gauges{grid-template-columns:1fr 1fr}
+  .airfoil-figure{padding:3px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .airfoil-figure svg{min-width:760px}
+  .airfoil-figure figcaption,.airfoil-figure .diagram-hint{min-width:760px}
+  .diagram-hint{display:block}
+  .airfoil-figure figcaption{font-size:10px}
+  .principles-meta span{font-size:9px}
+  .principle-cards{gap:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .principles-section{scroll-behavior:auto}
+}

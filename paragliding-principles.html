@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="滑翔伞原理：冲压翼与气室、翼型升力、XFOIL 极曲线示例、简化 6DOF 交互演示，以及空气动力学与 CFD 资料。">
+<meta name="theme-color" content="#f6f4ee">
+<title>滑翔伞原理 · Thomas Young</title>
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="flight-principles.css">
+<script src="site.js" defer></script>
+<script src="flight-principles.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<div class="site">
+  <header class="masthead">
+    <a class="wordmark" href="index.html">Thomas Young<small>一 个 人 的 探 索 札 记</small></a>
+    <span class="mastnote">在方程与风之间</span>
+  </header>
+
+  <nav class="topnav" aria-label="主导航">
+    <a href="index.html">首页</a>
+    <a href="research.html">理论物理</a>
+    <a href="play.html">趣味实验</a>
+    <a href="flight.html" aria-current="page">飞行影像</a>
+    <a href="apps.html">小程序</a>
+    <a href="crypto.html">Crypto</a>
+    <a href="notes.html">札记</a>
+    <button class="search-toggle" id="search-toggle" aria-expanded="false" aria-controls="site-search">⌕ 站内查找</button>
+  </nav>
+
+  <section id="site-search" class="search-panel" hidden aria-label="站内查找">
+    <label for="search-input">查找栏目与作品</label>
+    <input type="search" id="search-input" class="search-input" placeholder="例如：滑翔伞、原理、CFD……" autocomplete="off">
+    <p id="search-count" class="search-count" role="status"></p>
+    <ul id="search-results" class="search-results"></ul>
+  </section>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <div class="side-label">CONTENTS / 目录</div>
+        <nav aria-label="栏目目录">
+          <a href="research.html"><span class="idx">01</span><span>理论物理与数学</span></a>
+          <a href="play.html"><span class="idx">02</span><span>趣味实验室</span></a>
+          <a href="flight.html"><span class="idx">03</span><span>滑翔伞影像</span></a>
+          <a href="apps.html"><span class="idx">04</span><span>小程序工坊</span></a>
+          <a href="crypto.html"><span class="idx">05</span><span>加密货币探索</span></a>
+          <a href="notes.html"><span class="idx">06</span><span>札记与书架</span></a>
+        </nav>
+
+        <div class="side-box">
+          <div class="side-label">THIS PAGE / 本页</div>
+          <nav class="side-toc" aria-label="本页目录">
+            <a href="#inflatable-wing">01 · 会充气的翼</a>
+            <a href="#polar">02 · XFOIL 极曲线</a>
+            <a href="#sixdof">03 · 简化 6DOF</a>
+            <a href="#reading">04 · 资料与路径</a>
+          </nav>
+        </div>
+
+        <div class="side-box">
+          <div class="side-label">FLIGHT LAB</div>
+          <p>143 条真实 IGC 轨迹、三维回放与逐圈统计。</p>
+          <a href="paragliding-flight-lab.html">进入 Flight Lab ↗</a>
+        </div>
+
+        <div class="side-marker"></div>
+        <p class="note">先理解力，再谈性能。<br>模型不是飞行决策工具。</p>
+      </div>
+    </aside>
+
+    <main class="content" id="main">
+      <div class="breadcrumb"><a href="index.html">首页</a> / <a href="flight.html">滑翔伞影像</a> / 滑翔伞原理</div>
+
+      <header class="page-intro principles-intro">
+        <div class="kicker">03 / PARAGLIDING PRINCIPLES</div>
+        <h1>滑翔伞原理</h1>
+        <p>它不是一顶“会飘的降落伞”，而是一顶靠冲压空气保持形状的翼。这里从气室、翼型和迎角开始，走到一张真实的 XFOIL 极曲线，再把它装进一个可操作的简化 6DOF。</p>
+        <div class="principles-meta">
+          <span>冲压翼</span><span>低雷诺数</span><span>XFOIL 6.99</span><span>简化 6DOF</span>
+        </div>
+      </header>
+
+      <section class="article principles-section" id="inflatable-wing">
+        <div class="kicker">01 / THE INFLATABLE WING</div>
+        <h2>一顶会充气的翼</h2>
+        <p class="lead">滑翔伞的伞衣由上下翼面、翼肋和前缘开口组成。前进时空气从开口灌入，把每个气室撑成近似翼型的剖面；悬挂绳把飞行员载荷分布到伞衣上。形状不是缝出来的，而是由内压、绳力和来流共同维持的。</p>
+
+        <figure class="airfoil-figure">
+          <svg viewBox="0 0 1000 520" role="img" aria-labelledby="airfoil-title airfoil-desc">
+            <title id="airfoil-title">滑翔伞翼型与气室示意</title>
+            <desc id="airfoil-desc">侧视的滑翔伞翼型：前缘开口进气，气室内部充压，上下翼面形成升力，悬挂线连接飞行员；右上角为前视伞衣弧度。</desc>
+            <defs>
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#eef6f4"/><stop offset="1" stop-color="#fbfaf3"/>
+              </linearGradient>
+              <linearGradient id="canopy" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3b6a5a"/><stop offset="1" stop-color="#214b42"/>
+              </linearGradient>
+              <linearGradient id="cell" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#dff2e8"/><stop offset="1" stop-color="#b9dace"/>
+              </linearGradient>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill="#2f5a4c"/>
+              </marker>
+              <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill="#2a7b91"/>
+              </marker>
+              <marker id="arrowRust" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill="#a35c3d"/>
+              </marker>
+            </defs>
+
+            <rect width="1000" height="520" fill="url(#sky)"/>
+            <g fill="none" stroke="#9dc9c0" stroke-width="1.2" opacity=".55">
+              <path d="M20 150 C160 105 280 110 390 145 S610 195 760 145 S920 120 990 145"/>
+              <path d="M20 205 C170 175 270 178 380 205 S600 245 770 205 S930 180 990 205"/>
+              <path d="M20 265 C180 235 290 238 400 265 S620 305 780 265 S940 240 990 265"/>
+              <path d="M20 325 C160 300 290 302 410 325 S640 360 800 325 S940 305 990 325"/>
+            </g>
+
+            <g class="airfoil-body">
+              <path d="M235 178 C330 120 455 112 560 125 C665 138 744 165 790 202 L790 229 C730 214 660 205 590 205 C485 205 390 218 300 236 C270 242 246 236 235 220 Z"
+                    fill="url(#cell)" stroke="#2f5a4c" stroke-width="3"/>
+              <path d="M235 178 C330 120 455 112 560 125 C665 138 744 165 790 202" fill="none" stroke="#2f5a4c" stroke-width="4"/>
+              <path d="M300 236 C390 218 485 205 590 205 C660 205 730 214 790 229" fill="none" stroke="#2f5a4c" stroke-width="4"/>
+              <path d="M430 174 C440 190 440 207 438 222 M560 173 C566 189 568 206 568 218 M680 177 C690 191 694 205 700 218"
+                    fill="none" stroke="#5b8f7b" stroke-width="1.6" stroke-dasharray="5 5"/>
+              <path d="M235 178 C246 185 246 211 235 220" fill="none" stroke="#163f36" stroke-width="4"/>
+              <path d="M238 184 C252 186 252 208 238 214" fill="none" stroke="#7bb8a4" stroke-width="1.5"/>
+            </g>
+
+            <g class="airflow">
+              <line x1="28" y1="213" x2="206" y2="213" stroke="#2a7b91" stroke-width="2.5" marker-end="url(#arrowBlue)"/>
+              <text x="34" y="200" fill="#2a7b91" font-size="15">来流</text>
+              <line x1="120" y1="188" x2="228" y2="199" stroke="#2a7b91" stroke-width="2" marker-end="url(#arrowBlue)"/>
+              <text x="126" y="176" fill="#2a7b91" font-size="13">冲压进气</text>
+              <path d="M205 220 A70 70 0 0 1 245 185" fill="none" stroke="#a35c3d" stroke-width="1.7"/>
+              <text x="204" y="248" fill="#a35c3d" font-size="16" font-style="italic">α</text>
+            </g>
+
+            <g class="labels" font-size="14" fill="#435a4c">
+              <line x1="468" y1="142" x2="512" y2="126" stroke="#8fa795" stroke-width="1"/>
+              <text x="516" y="130">上翼面</text>
+              <line x1="548" y1="237" x2="510" y2="260" stroke="#8fa795" stroke-width="1"/>
+              <text x="440" y="278">下翼面</text>
+              <line x1="640" y1="186" x2="680" y2="155" stroke="#8fa795" stroke-width="1"/>
+              <text x="684" y="150">气室 · 翼肋</text>
+              <line x1="300" y1="235" x2="276" y2="275" stroke="#8fa795" stroke-width="1"/>
+              <text x="205" y="294">前缘开口</text>
+              <line x1="400" y1="228" x2="380" y2="316" stroke="#8fa795" stroke-width="1"/>
+              <text x="345" y="334">悬挂线</text>
+            </g>
+
+            <g class="forces" stroke-linecap="round">
+              <line x1="505" y1="112" x2="505" y2="56" stroke="#2f5a4c" stroke-width="3" marker-end="url(#arrow)"/>
+              <text x="516" y="68" fill="#2f5a4c" font-size="16">升力 L</text>
+              <line x1="802" y1="206" x2="870" y2="206" stroke="#a35c3d" stroke-width="2.4" marker-end="url(#arrowRust)"/>
+              <text x="818" y="194" fill="#a35c3d" font-size="15">阻力 D</text>
+            </g>
+
+            <g class="pilot">
+              <line x1="360" y1="235" x2="492" y2="383" stroke="#4d6859" stroke-width="1.6"/>
+              <line x1="455" y1="232" x2="500" y2="383" stroke="#4d6859" stroke-width="1.6"/>
+              <line x1="560" y1="221" x2="508" y2="383" stroke="#4d6859" stroke-width="1.6"/>
+              <line x1="650" y1="212" x2="516" y2="383" stroke="#4d6859" stroke-width="1.6"/>
+              <circle cx="505" cy="405" r="17" fill="#a35c3d"/>
+              <path d="M495 421 L482 446 M515 421 L528 446 M498 434 L486 448 M512 434 L524 448" fill="none" stroke="#a35c3d" stroke-width="3" stroke-linecap="round"/>
+              <text x="535" y="416" fill="#7d4534" font-size="15">飞行员 / 重心</text>
+              <text x="535" y="436" fill="#7d4534" font-size="12">摆式稳定</text>
+            </g>
+
+            <g class="front-inset" transform="translate(790 45)">
+              <rect x="0" y="0" width="190" height="145" rx="12" fill="#fbfaf3" stroke="#c8d6c9"/>
+              <text x="12" y="20" fill="#5d6c62" font-size="11" letter-spacing="1">FRONT VIEW / 前视</text>
+              <path d="M25 106 C42 58 148 58 165 106" fill="none" stroke="#2f5a4c" stroke-width="3"/>
+              <path d="M41 102 C54 70 136 70 149 102" fill="none" stroke="#8db9a7" stroke-width="1.2"/>
+              <path d="M64 92 L88 123 M92 81 L96 123 M120 81 L110 123 M144 92 L118 123" stroke="#7d9888" stroke-width="1.2"/>
+              <circle cx="103" cy="126" r="5" fill="#a35c3d"/>
+              <text x="12" y="140" fill="#7b887e" font-size="10">伞衣弧度 · 气室 · 悬挂线</text>
+            </g>
+          </svg>
+          <figcaption>侧视：前缘开口把空气压进气室，翼型产生升力；飞行员质量在下方形成摆式稳定。右上角为前视伞衣弧度。</figcaption>
+          <p class=diagram-hint>左右滑动查看完整标注 →</p>
+        </figure>
+      </section>
+
+      <section class="article principles-section" id="how-it-flies">
+        <div class="kicker">01.1 / LIFT &amp; CONTROL</div>
+        <h2>升力从哪里来</h2>
+        <p>当气流经过有弯度的翼型时，上表面速度较高、压力较低，下表面压力较高；同时后缘的库塔条件决定环量，气流整体向下偏转，翼面获得向上的反作用力。伯努利和“向下推空气”不是两套互相排斥的解释，而是同一流场的两种记账方式。</p>
+        <div class="formula-strip">
+          <div><span class="formula-label">升力</span><code>L = ½ ρ V² S C<sub>L</sub></code></div>
+          <div><span class="formula-label">阻力</span><code>D = ½ ρ V² S C<sub>D</sub></code></div>
+          <div><span class="formula-label">滑翔比</span><code>L/D = C<sub>L</sub>/C<sub>D</sub></code></div>
+          <div><span class="formula-label">失速速度</span><code>V<sub>s</sub> ≈ √(2W / ρS C<sub>Lmax</sub>)</code></div>
+        </div>
+        <div class="principle-cards">
+          <article>
+            <div class="principle-num">01</div>
+            <h3>迎角决定升力</h3>
+            <p>刹车增大弯度和阻力，通常让速度下降、迎角增大；加速系统降低迎角、提高速度，但减小失速余量。俯仰角不等于迎角。</p>
+          </article>
+          <article>
+            <div class="principle-num">02</div>
+            <h3>低雷诺数</h3>
+            <p>伞衣弦长和速度都不大，Re 常落在 10<sup>5</sup> 量级。层流分离泡、转捩和表面粗糙度会显著影响极曲线，二维结果不能直接代表整伞。</p>
+          </article>
+          <article>
+            <div class="principle-num">03</div>
+            <h3>摆式稳定</h3>
+            <p>飞行员挂在伞衣下方，形成摆；伞衣弧度、后掠、绳长和重心位置共同决定俯仰/滚转稳定性。阵风和单侧塌陷属于非线性问题。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="article principles-section" id="polar">
+        <div class="kicker">02 / XFOIL POLAR</div>
+        <h2>从翼型到极曲线</h2>
+        <p class="lead">下面不是手绘示意图，而是用 <strong>XFOIL 6.99</strong> 实际计算的 NACA 2412 二维极曲线：Re = 3.0×10<sup>5</sup>，Ncrit = 9，迎角 −4° 到 14°。它展示的是“怎么读翼型”，不是某顶滑翔伞的整伞性能。</p>
+
+        <div class="polar-layout">
+          <div class="polar-card">
+            <div class="polar-toolbar" role="group" aria-label="极曲线图切换">
+              <button type="button" class="polar-tab active" data-metric="cl">C<sub>L</sub>–α</button>
+              <button type="button" class="polar-tab" data-metric="ld">L/D–α</button>
+              <button type="button" class="polar-tab" data-metric="cd">C<sub>D</sub>–C<sub>L</sub></button>
+            </div>
+            <div class="polar-canvas-wrap">
+              <canvas id="polarChart" height="390" aria-label="NACA 2412 的 XFOIL 极曲线图"></canvas>
+            </div>
+            <div class="polar-legend" id="polarLegend"></div>
+            <p class="chart-note" id="polarCaption">横轴为迎角 α（°），纵轴为升力系数 C<sub>L</sub>。数据由 XFOIL 6.99 计算。</p>
+          </div>
+
+          <aside class="polar-side">
+            <div class="polar-stat"><span>最大 C<sub>L</sub></span><b id="statClmax">—</b><small id="statClmaxAlpha">—</small></div>
+            <div class="polar-stat"><span>最大 L/D</span><b id="statLdmax">—</b><small id="statLdmaxAlpha">—</small></div>
+            <div class="polar-stat"><span>零升迎角</span><b id="statAlpha0">—</b><small>由数据线性插值</small></div>
+            <div class="polar-stat"><span>计算条件</span><b>Re 3.0e5</b><small>NACA 2412 · Ncrit 9</small></div>
+            <pre class="command-box"><code>NACA 2412
+OPER
+VISC 300000
+MACH 0
+ITER 300
+PACC
+naca2412.pol
+
+ASEQ -4 14 0.5</code></pre>
+            <a class="quiet-link" href="flight-data/xfoil-naca2412-re300k.csv" download>下载极曲线 CSV ↓</a>
+          </aside>
+        </div>
+
+        <div class="callout">
+          <strong>读图时注意：</strong>二维 NACA 2412 在高迎角处会失速；真实伞衣还有前缘开口、气室充压、三维弧度、翼尖涡、悬挂绳阻力和柔性变形。XFOIL 给出的是“翼型层面的趋势”，不是整伞的最终 L/D。
+        </div>
+      </section>
+
+      <section class="article principles-section" id="sixdof">
+        <div class="kicker">03 / INTERACTIVE 6DOF</div>
+        <h2>简化 6DOF：把公式变成能飞的模型</h2>
+        <p class="lead">这是一个教学用的简化六自由度模型：三轴位置/速度，加三轴姿态/角速度。升力/阻力来自上面那张 XFOIL 极曲线；姿态用增稳控制器约束。它不是 FSI，也不是认证级 8DOF。</p>
+
+        <div class="sim-shell">
+          <div class="sim-stage">
+            <canvas id="simCanvas" aria-label="滑翔伞简化 6DOF 侧视飞行模拟"></canvas>
+            <div class="sim-badge" id="simStatus">飞行中</div>
+            <div class="sim-hint">拖动滑杆改变刹车、加速与转弯；观察迎角、下沉率和航向。</div>
+          </div>
+
+          <aside class="sim-panel">
+            <div class="sim-gauges">
+              <div><span>高度</span><b id="simAlt">—</b></div>
+              <div><span>空速</span><b id="simSpeed">—</b></div>
+              <div><span>升降率</span><b id="simClimb">—</b></div>
+              <div><span>迎角</span><b id="simAlpha">—</b></div>
+              <div><span>坡度</span><b id="simBank">—</b></div>
+              <div><span>滑翔比</span><b id="simLD">—</b></div>
+            </div>
+
+            <label class="sim-control" for="brake">
+              <span>刹车 <output id="brakeOut">0%</output></span>
+              <input id="brake" type="range" min="0" max="100" value="0">
+            </label>
+            <label class="sim-control" for="speedbar">
+              <span>加速 <output id="speedOut">0%</output></span>
+              <input id="speedbar" type="range" min="0" max="100" value="0">
+            </label>
+            <label class="sim-control" for="turn">
+              <span>转弯 <output id="turnOut">0</output></span>
+              <input id="turn" type="range" min="-100" max="100" value="0">
+            </label>
+
+            <div class="sim-buttons">
+              <button type="button" class="sim-btn" id="simGust">阵风 +</button>
+              <button type="button" class="sim-btn" id="simPause">暂停</button>
+              <button type="button" class="sim-btn" id="simReset">重置</button>
+            </div>
+
+            <details class="sim-note">
+              <summary>这个模型做了什么？</summary>
+              <p>状态量为位置、速度、四元数姿态和体轴角速度；力来自翼型极曲线，姿态由 PD 增稳。它演示“输入如何改变飞行状态”，不用于预测真实伞的塌陷、螺旋或认证性能。</p>
+              <p>高度是局部坐标，地面为 0 m；阵风是一个短时速度脉冲。</p>
+            </details>
+          </aside>
+        </div>
+      </section>
+
+      <section class="article principles-section" id="reading">
+        <div class="kicker">04 / READING PATH</div>
+        <h2>资料与阅读路径</h2>
+        <p>先建立物理图像，再进入翼型和 CFD。按这个顺序读，比一上来就跑三维大网格有效得多。</p>
+
+        <div class="reading-grid">
+          <article class="reading-card">
+            <div class="reading-kicker">START HERE</div>
+            <h3>入门：先看这三份</h3>
+            <ul>
+              <li><a href="https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/glider_handbook/gfh_chapter_3.pdf" target="_blank" rel="noopener">FAA Glider Flying Handbook · Ch. 3</a><br><small>升力、阻力、迎角、失速、稳定性的权威基础。</small></li>
+              <li><a href="https://www.grc.nasa.gov/www/k-12/airplane/" target="_blank" rel="noopener">NASA Beginner's Guide to Aeronautics</a><br><small>含 FoilSim，可交互改变翼型、迎角、速度。</small></li>
+              <li><a href="https://www.av8n.com/how/" target="_blank" rel="noopener">John Denker, See How It Flies</a><br><small>第 2–6 章把迎角、能量与稳定性讲透。</small></li>
+            </ul>
+          </article>
+
+          <article class="reading-card">
+            <div class="reading-kicker">PARAGLIDER PAPERS</div>
+            <h3>滑翔伞与冲压翼</h3>
+            <ul>
+              <li><a href="https://www.jstage.jst.go.jp/article/tjsass/49/163/49_163_9/_article/-char/en" target="_blank" rel="noopener">Mashud &amp; Umemura (2006)</a><br><small>充气气室模型的风洞实验：开口、内压、升阻力。</small></li>
+              <li><a href="https://doi.org/10.1063/1.5065326" target="_blank" rel="noopener">Air inlet configurations (2018)</a><br><small>前缘进气口几何对开放翼型性能的影响。</small></li>
+              <li><a href="https://doi.org/10.1016/j.ast.2025.111440" target="_blank" rel="noopener">8-DOF paraglider-harness/pilot model (2026)</a><br><small>伞衣、吊带、飞行员的耦合飞行动力学。</small></li>
+              <li><a href="https://doi.org/10.1016/j.ast.2016.04.024" target="_blank" rel="noopener">Ghoreyshi et al. (2016)</a><br><small>Ram-air 翼的 CFD 气动建模。</small></li>
+            </ul>
+          </article>
+
+          <article class="reading-card">
+            <div class="reading-kicker">SIMULATION</div>
+            <h3>模拟工具</h3>
+            <ul>
+              <li><a href="https://web.mit.edu/drela/Public/web/xfoil/" target="_blank" rel="noopener">XFOIL</a><br><small>二维翼型黏性分析；本页数据即由它计算。</small></li>
+              <li><a href="https://flow5.tech/xflr5/xflr5.html" target="_blank" rel="noopener">XFLR5 / Flow5</a><br><small>翼型、机翼、整机低雷诺数分析。</small></li>
+              <li><a href="https://m-selig.ae.illinois.edu/ads/coord_database.html" target="_blank" rel="noopener">UIUC Airfoil Database</a><br><small>约 1650 个翼型坐标，可直接导入。</small></li>
+              <li><a href="https://dafoam.github.io/v4-pages/user-guide-naca0012.html" target="_blank" rel="noopener">DAFoam NACA0012 教程</a><br><small>OpenFOAM + 离散伴随的二维 CFD 入门。</small></li>
+            </ul>
+          </article>
+
+          <article class="reading-card">
+            <div class="reading-kicker">CHINESE</div>
+            <h3>中文训练资料</h3>
+            <ul>
+              <li><a href="https://www.sport.gov.cn/hgzx/n15154/c25077354/part/25077504.docx" target="_blank" rel="noopener">国家体育总局航管中心 · 滑翔伞技术等级培训大纲（试行）</a><br><small>训练体系、科目和安全边界；不是空气动力学教材。</small></li>
+            </ul>
+            <p class="reading-note">书籍：Dennis Pagen《The Art of Paragliding》《Understanding the Sky》；Burkhard Martens《Thermal Flying》；Noel Whittall《Paragliding: The Complete Guide》。</p>
+          </article>
+        </div>
+
+        <div class="keywords">
+          <span>检索关键词</span>
+          <code>paraglider aerodynamic characteristics</code>
+          <code>ram-air parachute CFD</code>
+          <code>parafoil fluid-structure interaction</code>
+          <code>paraglider flight dynamics</code>
+          <code>leading-edge inflatable wing</code>
+        </div>
+      </section>
+
+      <section class="article principles-section boundaries">
+        <div class="kicker">BOUNDARIES / 边界</div>
+        <h2>模型能做什么，不能做什么</h2>
+        <p>二维翼型、三维势流、RANS/FSI 和 6DOF 是不同层次的工具。滑翔伞的柔性、开口、透气、绳系和飞行员摆动，使任何单一模型都只能回答有限问题。真实的失速、单侧塌陷、螺旋和阵风响应必须靠风洞、试飞和认证数据验证。</p>
+        <p>本页与 Flight Lab 里的 IGC 回放都用于理解与可视化，不构成飞行建议，也不替代正规训练、EN/LTF 认证试飞和现场判断。</p>
+        <p class="quiet-link"><a href="paragliding-flight-lab.html">回 Flight Lab：用 143 条真实 IGC 看盘旋与高度 →</a></p>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <span>© 2026 Thomas Young · 在方程与风之间</span>
+    <span><a href="about.html">关于</a><a href="archive.html">全站目录</a><a href="https://github.com/youngthomas37-beep">GitHub ↗</a></span>
+  </footer>
+</div>
+</body>
+</html>
