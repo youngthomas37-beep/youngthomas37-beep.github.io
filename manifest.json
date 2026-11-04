@@ -1,0 +1,13 @@
+{
+  "name": "谣言检测助手",
+  "short_name": "谣言检测",
+  "description": "基于中文 BERT 的谣言/假新闻辅助检测工具",
+  "start_url": "rumor.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf9f7",
+  "theme_color": "#b45309",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
