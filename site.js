@@ -19,6 +19,9 @@
     ['小程序工坊','apps.html','小程序 应用 app 开发 工具'],
     ['比特币网络共识实验','bitcoin-consensus.html','bitcoin 比特币 共识 网络 分叉 链重组 Python simulation 模拟 白皮书'],
     ['加密货币探索','crypto.html','crypto cryptocurrency 加密货币 代币 构想'],
+    ['LLM 实验室','llm.html','LLM 大语言模型 BERT 分类器 Qwen 聊天 AI 本地推理'],
+    ['BERT 情感分类器','classifier.html','BERT 情感 分类 IMDB 浏览器 大模型 推理'],
+    ['AI 聊天助手','chat.html','Qwen 聊天 AI 大模型 本地模型'],
     ['札记与书架','notes.html','读书 阅读 书架 随想 笔记 问题'],
     ['关于我与这里','about.html','Thomas Young 关于 联系 GitHub'],
     ['全站目录','archive.html','目录 索引 全部']

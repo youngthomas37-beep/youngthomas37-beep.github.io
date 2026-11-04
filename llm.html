@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thomas Young 的 LLM 实验室：本地 BERT 情感分类器与 Qwen 聊天助手，记录大语言模型在浏览器和本机上的实验。">
+<meta name="theme-color" content="#f6f4ee">
+<title>LLM 实验室 · Thomas Young</title>
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<div class="site">
+  <header class="masthead">
+    <a class="wordmark" href="index.html">Thomas Young<small>一 个 人 的 探 索 札 记</small></a>
+    <span class="mastnote">在方程与风之间</span>
+  </header>
+
+  <nav class="topnav" aria-label="主导航">
+    <a href="index.html">首页</a>
+    <a href="research.html">理论物理</a>
+    <a href="play.html">趣味实验</a>
+    <a href="flight.html">飞行影像</a>
+    <a href="apps.html">小程序</a>
+    <a href="crypto.html">Crypto</a>
+    <a href="llm.html" aria-current="page">LLM 实验室</a>
+    <a href="notes.html">札记</a>
+    <button class="search-toggle" id="search-toggle" aria-expanded="false" aria-controls="site-search">⌕ 站内查找</button>
+  </nav>
+
+  <section id="site-search" class="search-panel" hidden aria-label="站内查找">
+    <label for="search-input">查找栏目与作品</label>
+    <input type="search" id="search-input" class="search-input" placeholder="例如：LLM、语言模型、滑翔伞……" autocomplete="off">
+    <p id="search-count" class="search-count" role="status"></p>
+    <ul id="search-results" class="search-results"></ul>
+  </section>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <div class="side-label">CONTENTS / 目录</div>
+        <nav aria-label="栏目目录">
+          <a href="research.html"><span class="idx">01</span><span>理论物理与数学</span></a>
+          <a href="play.html"><span class="idx">02</span><span>趣味实验室</span></a>
+          <a href="flight.html"><span class="idx">03</span><span>滑翔伞影像</span></a>
+          <a href="apps.html"><span class="idx">04</span><span>小程序工坊</span></a>
+          <a href="crypto.html"><span class="idx">05</span><span>加密货币探索</span></a>
+          <a href="llm.html"><span class="idx">06</span><span>LLM 实验室</span></a>
+          <a href="notes.html"><span class="idx">07</span><span>札记与书架</span></a>
+        </nav>
+
+        <div class="side-box">
+          <div class="side-label">WHAT THIS IS</div>
+          <p>大语言模型的本地实验场：一个在浏览器内运行的小分类器，一个需要本机模型服务的聊天助手。</p>
+        </div>
+
+        <div class="side-box">
+          <div class="side-label">PLAY &amp; MAKE</div>
+          <p>游戏、求解器与视觉实验仍在趣味实验室。</p>
+          <a href="play.html">回到趣味实验室 ↗</a>
+        </div>
+
+        <div class="side-marker"></div>
+        <p class="note">模型在本地，<br>问题保持开放。</p>
+      </div>
+    </aside>
+
+    <main class="content" id="main">
+      <div class="breadcrumb"><a href="index.html">首页</a> / LLM 实验室</div>
+
+      <header class="page-intro">
+        <div class="kicker">06 / LLM LAB</div>
+        <h1>LLM 实验室</h1>
+        <p>把大语言模型从“对话框”里拿出来，看看它在浏览器、本机服务和真实输入上到底能做什么。这里保留两条独立的实验路线：一个轻量分类器，一个需要本机模型服务的聊天助手。</p>
+      </header>
+
+      <section class="article">
+        <div class="research-note">
+          <strong>本地优先：</strong>BERT 分类器在浏览器内完成推理，输入不会上传到服务器；Qwen 聊天助手需要在本机启动模型服务。两个页面各自说明运行条件，不把“需要本机”伪装成“打开即用”。
+        </div>
+      </section>
+
+      <section class="article" id="experiments">
+        <h2>实验记录</h2>
+        <div class="project-entry">
+          <span class="number">01</span>
+          <div>
+            <h2><a href="classifier.html">BERT 情感分类器</a></h2>
+            <p>在 IMDB 数据上微调的 BERT 二分类模型。输入一段中英文文本，在浏览器里完成推理，输出正面/负面判断与概率。</p>
+            <div class="tags">大模型 / 浏览器内推理 / 输入不上传</div>
+          </div>
+          <a class="open" href="classifier.html">打开实验 ↗</a>
+        </div>
+
+        <div class="project-entry">
+          <span class="number">02</span>
+          <div>
+            <h2><a href="chat.html">AI 聊天助手</a></h2>
+            <p>基于 Qwen2.5-7B 的本地聊天模型，支持连续一问一答。页面连接本机的模型服务，适合在自己的机器上观察推理、延迟与上下文行为。</p>
+            <div class="tags">大模型 / 本机模型服务 / 对话</div>
+          </div>
+          <a class="open" href="chat.html">打开实验 ↗</a>
+        </div>
+      </section>
+
+      <section class="article">
+        <h2>为什么单独成栏</h2>
+        <p>LLM 实验和“游戏/求解器”不同：它的重点不是交互玩法，而是模型行为、推理位置、输入隐私和运行条件。单独成栏后，可以继续加入模型比较、提示词实验、量化和本地部署记录，而不必塞进趣味实验室的列表里。</p>
+        <p>如果你是从趣味实验室过来的，原来的入口已经移动到这里；<a class="quiet-link" href="play.html">趣味实验室</a>仍然保留游戏、魔方、数独、轨道和刚体实验。</p>
+      </section>
+
+      <section class="article">
+        <h2>下一步</h2>
+        <p>计划中的实验：同一段文本在不同模型上的分类结果对比、浏览器端小模型的量化版本、以及把“模型回答”与“检索到的原文”分开显示的 RAG 小实验。</p>
+        <div class="empty-line">实验记录会按实际完成情况逐条加入，不用占位内容填满。</div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <span>© 2026 Thomas Young · 在方程与风之间</span>
+    <span><a href="about.html">关于</a><a href="archive.html">全站目录</a><a href="https://github.com/youngthomas37-beep">GitHub ↗</a></span>
+  </footer>
+</div>
+</body>
+</html>
