@@ -20,3 +20,25 @@
 
 br.card-break{display:none}
 @media(max-width:660px){br.card-break{display:inline}}
+
+/* Paragliding lab */
+.lab-feature{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:38px;align-items:center;padding:32px 0;border-bottom:1px solid var(--line)}
+.lab-feature h2{font:600 27px/1.45 var(--serif);margin:9px 0 10px;letter-spacing:.03em}
+.lab-feature h2 span{display:block;font:11px/1.6 var(--sans);letter-spacing:.13em;color:var(--muted);margin-top:7px}
+.lab-feature p{color:#656a63;font-size:14px;line-height:2.05;max-width:560px;margin:0}
+.lab-actions{display:flex;align-items:center;gap:18px;margin-top:20px;flex-wrap:wrap}
+.lab-button{display:inline-block;background:var(--green);color:#fff!important;padding:10px 20px;font-size:13px;border-radius:2px;letter-spacing:.02em}
+.lab-button:hover{background:#2d5146;color:#fff!important}
+.lab-shot{display:block;border:1px solid var(--line);background:#e9eee5;box-shadow:0 14px 30px #26332a1f;overflow:hidden}
+.lab-shot img{display:block;width:100%;height:430px;object-fit:cover;object-position:50% 42%;transition:transform .3s ease}
+.lab-shot:hover img{transform:scale(1.015)}
+.lab-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+.lab-card{background:var(--paper);padding:24px 22px;display:flex;flex-direction:column;gap:8px;min-height:215px;transition:background .2s ease}
+.lab-card:hover{background:var(--wash);color:inherit}
+.lab-card h3{font:600 19px/1.55 var(--serif);margin:4px 0 0}
+.lab-card p{font-size:13px;line-height:1.95;color:#656a63;margin:0}
+.lab-card .read{margin-top:auto;padding-top:12px;color:var(--green);font-size:12px;text-decoration:underline;text-underline-offset:4px}
+.link-row.featured{background:var(--wash);border-top:1px solid var(--line);padding:15px 16px;margin-top:4px}
+.link-row.featured .tag{background:var(--green);color:#fff;border-color:var(--green);font-size:10px;padding:2px 6px;margin-left:7px;vertical-align:2px}
+@media(max-width:900px){.lab-feature{grid-template-columns:minmax(0,1fr) 250px;gap:24px}.lab-shot img{height:340px}.lab-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:660px){.lab-feature{grid-template-columns:1fr;gap:18px;padding:24px 0}.lab-shot img{height:300px;object-position:50% 38%}.lab-grid{grid-template-columns:1fr}.lab-card{min-height:0;padding:20px 16px}}
