@@ -265,22 +265,25 @@
     return p.then(function () { return readResponse(port, timeoutMs); });
   }
 
-  var K5BootlogoWriter = /** @class */ (function () {
-    function K5BootlogoWriter() {
+  /* ==================== 自定义元素（必须 extends HTMLElement + super()） ==================== */
+  class K5BootlogoWriter extends HTMLElement {
+    constructor() {
+      super();
       this.port = null;
       this.bitmap = null;   // 1024 字节位图
       this.img = null;      // 原始 ImageBitmap
     }
-    K5BootlogoWriter.prototype.connectedCallback = function () {
+
+    connectedCallback() {
       var root = this.attachShadow({ mode: 'open' });
       root.innerHTML = '<style>' + CSS + '</style>' + TEMPLATE;
       this.$ = function (id) { return root.getElementById(id); };
       this.log = function (m) { this.$('log').textContent += '\n' + m; };
       this.setStatus = function (s) { this.$('status').textContent = s; };
       this.bind();
-    };
+    }
 
-    K5BootlogoWriter.prototype.bind = function () {
+    bind() {
       var self = this;
       this.$('connectBtn').addEventListener('click', function () { self.connect(); });
       this.$('fileInput').addEventListener('change', function (e) { self.onFile(e); });
@@ -292,9 +295,9 @@
       this.$('textY').addEventListener('input', function () { self.reapply(); });
       this.$('readBtn').addEventListener('click', function () { self.readBack(); });
       this.$('writeBtn').addEventListener('click', function () { self.write(); });
-    };
+    }
 
-    K5BootlogoWriter.prototype.connect = function () {
+    connect() {
       var self = this;
       (function () {
         if (!('serial' in navigator)) throw new Error('当前浏览器不支持 Web Serial（请用 Chrome/Edge 且 HTTPS）');
@@ -323,9 +326,9 @@
         self.$('readBtn').disabled = true;
         self.$('writeBtn').disabled = true;
       });
-    };
+    }
 
-    K5BootlogoWriter.prototype.onFile = function (e) {
+    onFile(e) {
       var self = this;
       var file = e.target.files[0];
       if (!file) return;
@@ -334,9 +337,9 @@
         self.reapply();
         self.log('已载入图片: ' + file.name);
       }).catch(function (err) { self.log('图片读取失败: ' + err.message); });
-    };
+    }
 
-    K5BootlogoWriter.prototype.reapply = function () {
+    reapply() {
       var invert = this.$('invert').checked;
       var stretch = this.$('stretch').checked;
       var dither = this.$('dither').checked;
@@ -350,9 +353,9 @@
       this.bitmap = dither ? floydSteinberg(gray, thr, invert) : simpleThreshold(gray, thr, invert);
       this.drawPreview(this.bitmap);
       if (this.port) this.$('writeBtn').disabled = false;
-    };
+    }
 
-    K5BootlogoWriter.prototype.drawPreview = function (buf) {
+    drawPreview(buf) {
       var cv = this.$('preview');
       var ctx = cv.getContext('2d');
       var gray = bitmapToGray(buf);
@@ -362,9 +365,9 @@
         id.data[i * 4 + 3] = 255;
       }
       ctx.putImageData(id, 0, 0);
-    };
+    }
 
-    K5BootlogoWriter.prototype.readBack = function () {
+    readBack() {
       var self = this;
       this.$('readBtn').disabled = true;
       var buf = new Uint8Array(1024);
@@ -394,9 +397,9 @@
       }).then(function () {
         self.$('readBtn').disabled = false;
       });
-    };
+    }
 
-    K5BootlogoWriter.prototype.write = function () {
+    write() {
       var self = this;
       if (!this.port || !this.bitmap) return;
       this.$('writeBtn').disabled = true;
@@ -423,10 +426,8 @@
       }).then(function () {
         self.$('writeBtn').disabled = false;
       });
-    };
-
-    return K5BootlogoWriter;
-  })();
+    }
+  }
 
   customElements.define('k5-bootlogo-writer', K5BootlogoWriter);
 })();
