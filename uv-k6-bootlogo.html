@@ -67,22 +67,34 @@
         <h1>UV-K6 开机画面定制</h1>
         <p>连接泉盛 UV-K5/K6，上传图片或输入呼号，写入对讲机开机画面。纯浏览器直连（Web Serial），无需安装任何软件。</p>
       </header>
-      <section class="article">
-        <h2>使用前提</h2>
+
+      <section class="article" style="border-left:4px solid #c98a00;background:#fff8e1;padding:16px 18px;border-radius:8px;margin-bottom:18px">
+        <h2 style="margin-top:0">⚠️ 使用前必读（硬件与固件限制）</h2>
+        <p>本工具写入的是对讲机 EEPROM 的 <b>0x02080</b> 区域（开机图片，以及渲染进图片的文字）。它有硬性前提，<b>不满足则无法使用</b>：</p>
         <ul>
-          <li>对讲机已刷 <strong>LOSEHU xxxK / xxxH / xxxHS</strong> 固件（需已扩容 EEPROM ≥1MiB）。</li>
-          <li>用 <strong>Chrome / Edge</strong> 打开本页。</li>
-          <li>写频线连接电脑并给对讲机<b>开机</b>（UV-K6 用 USB-C 数据线；首次使用需装 CH340 串口驱动）。</li>
+          <li><b>固件</b>：必须是 <b>LOSEHU 自定义固件的 K / H / HS 版本</b>。原厂固件（例如连接后识别到的版本号如 <code>7.01.09</code>）没有该功能，本工具会直接拒绝并提示。</li>
+          <li><b>EEPROM 必须扩容</b>：<b>K 版</b>需 ≥ 1Mib（约 128KB，如 24C1024），<b>H / HS 版</b>需 ≥ 2Mib（约 256KB，如 24C2048）。原厂 UV-K6 的 EEPROM 通常只有约 8KB（24C64），<b>远小于所需容量</b>——要使用本工具，必须物理更换 EEPROM 芯片（硬件改造、需要焊接）。</li>
         </ul>
-        <h2>使用步骤</h2>
+        <p><b>如果你的 UV-K6 没有扩容 EEPROM（原厂状态）：</b></p>
+        <ul>
+          <li>本工具<b>无法使用</b>（要写入的地址超出 EEPROM 容量）。</li>
+          <li>可以刷<b>基础版 <code>LOSEHU133.bin</code></b>（无需扩容），用它自带的「开机文字」功能（2 行文字，可用 <b>CHIRP</b> 等写频软件编辑后写入）。但请注意：<b>这不等于本工具的功能</b>——本工具写的是图片位图，基础版用不了。</li>
+        </ul>
+        <p class="muted">⚠️ 刷机有风险：刷前请务必先备份原厂固件；硬件扩容属焊接改造，操作不当可能损坏对讲机，请谨慎。</p>
+      </section>
+
+      <section class="article">
+        <h2>使用步骤（仅适用于已扩容 + K/H/HS 固件）</h2>
         <ol>
           <li>点「连接对讲机」，在浏览器弹出的串口列表里选择 COM 口。</li>
+          <li>页面会显示识别到的固件版本；只有 <code>LOSEHU xxxK / xxxH / xxxHS</code> 才能继续。</li>
           <li>上传图片，和/或输入呼号文字；预览即最终效果。</li>
           <li>点「写入开机图片」；也可先点「读回当前开机画面」查看当前画面。</li>
           <li>重启对讲机查看效果。</li>
         </ol>
         <p>说明：开机画面为 128×64 单色；照片建议 2:1 横图，文字建议短而大（呼号等）。</p>
       </section>
+
       <section class="article">
         <h2>定制器</h2>
         <k5-bootlogo-writer></k5-bootlogo-writer>
