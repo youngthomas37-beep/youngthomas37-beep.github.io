@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="泉盛 UV-K5/K6 刷 LOSEHU 自定义固件的完整步骤：k5prog-win 图形界面 / K5Web 网页刷机，含升级模式进入、备份与注意事项。">
+<meta name="theme-color" content="#f6f4ee">
+<title>UV-K6 刷机指南 · Thomas Young</title>
+<link rel="stylesheet" href="site.css">
+<script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<div class="site">
+  <header class="masthead">
+    <a class="wordmark" href="index.html">Thomas Young<small>一 个 人 的 探 索 札 记</small></a>
+    <span class="mastnote">在方程与风之间</span>
+  </header>
+  <nav class="topnav" aria-label="主导航">
+    <a href="index.html">首页</a>
+    <a href="research.html">理论物理</a>
+    <a href="play.html">趣味实验</a>
+    <a href="flight.html" aria-current="page">滑翔伞实验室</a>
+    <a href="apps.html">小程序</a>
+    <a href="crypto.html">Crypto</a>
+    <a href="llm.html">LLM 实验室</a>
+    <a href="notes.html">札记</a>
+    <button class="search-toggle" id="search-toggle" aria-expanded="false" aria-controls="site-search">⌕ 站内查找</button>
+  </nav>
+  <section id="site-search" class="search-panel" hidden aria-label="站内查找">
+    <label for="search-input">查找栏目与作品</label>
+    <input type="search" id="search-input" class="search-input" placeholder="例如：数学、数独、飞行……" autocomplete="off">
+    <p id="search-count" class="search-count" role="status"></p>
+    <ul id="search-results" class="search-results"></ul>
+  </section>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <div class="side-label">CONTENTS / 目录</div>
+        <nav aria-label="栏目目录">
+          <a href="research.html"><span class="idx">01</span><span>理论物理与数学</span></a>
+          <a href="play.html"><span class="idx">02</span><span>趣味实验室</span></a>
+          <a href="flight.html"><span class="idx">03</span><span>滑翔伞实验室</span></a>
+          <a href="apps.html"><span class="idx">04</span><span>小程序工坊</span></a>
+          <a href="crypto.html"><span class="idx">05</span><span>加密货币探索</span></a>
+          <a href="llm.html"><span class="idx">06</span><span>LLM 实验室</span></a>
+          <a href="notes.html"><span class="idx">07</span><span>札记与书架</span></a>
+        </nav>
+        <div class="side-box">
+          <div class="side-label">ABOUT THIS SPACE</div>
+          <p>从纸上的推演，到屏幕里的实验，再到天空中的片刻。把值得留存的过程，慢慢记录下来。</p>
+          <a href="about.html">关于我与这里 ↗</a>
+        </div>
+        <div class="side-box">
+          <div class="side-label">INDEX / 索引</div>
+          <p><a href="archive.html">全站目录</a>　·　<a href="index.html#updates">更新记录</a><br><a href="https://github.com/youngthomas37-beep">GitHub ↗</a></p>
+        </div>
+        <div class="side-marker"></div>
+        <p class="note">内容慢慢积累，<br>问题始终开放。</p>
+      </div>
+    </aside>
+    <main class="content" id="main">
+      <div class="breadcrumb"><a href="index.html">首页</a> / <a href="flight.html">滑翔伞实验室</a> / UV-K6 刷机指南</div>
+      <header class="page-intro">
+        <div class="kicker">GUIDE / 指南</div>
+        <h1>UV-K6 刷机指南</h1>
+        <p>把泉盛 UV-K5/K6 刷成 LOSEHU 自定义固件的完整步骤：用 k5prog-win 图形界面或 K5Web 网页刷机，含升级模式进入、备份与注意事项。</p>
+      </header>
+
+      <section class="article">
+        <h2>0. 准备</h2>
+        <ul>
+          <li><b>固件文件</b>：本指南以基础版 <code>LOSEHU133.bin</code>（中文，无需扩容）为例；英文版为 <code>LOSEHU133E.bin</code>。K/H 版需要扩容 EEPROM，见相关工具页说明。</li>
+          <li><b>先备份原厂固件</b>（强烈建议）：用下面的工具先把当前固件读出来存成文件，万一刷坏可恢复。</li>
+          <li><b>关闭占用 COM 口的软件</b>：CHIRP、串口助手、网页串口工具等，避免冲突。</li>
+          <li><b>连接</b>：写频线连接电脑，给对讲机<b>开机</b>；Windows 设备管理器里确认出现 COM 口。</li>
+        </ul>
+      </section>
+
+      <section class="article">
+        <h2>1. 进入「固件升级模式」（关键）</h2>
+        <ol>
+          <li><b>长按 PTT 键不放，再开机</b>。</li>
+          <li>直到 <b>手电筒常亮、屏幕不亮</b> —— 说明已进入固件升级模式。</li>
+          <li>松开 PTT，保持这个状态。</li>
+        </ol>
+        <p class="muted">这是泉盛 UV-K5/K6 通用的升级模式；个别工具会自动让电台进入，按工具提示操作即可。</p>
+      </section>
+
+      <section class="article">
+        <h2>2. 方法 A：k5prog-win（Windows 图形界面，推荐）</h2>
+        <ol>
+          <li>下载：<a href="https://github.com/OneOfEleven/k5prog-win/releases" target="_blank" rel="noopener">github.com/OneOfEleven/k5prog-win</a>（解压即用）。</li>
+          <li>打开程序，<b>选择 COM 口</b>。</li>
+          <li><b>先备份</b>：点读取（Read）把当前固件/EEPROM 读出来保存。</li>
+          <li><b>选择固件</b> <code>LOSEHU133.bin</code>，点写入 / 刷写（Write / Flash）。</li>
+          <li>等待进度到 100%，期间不要断电、不要拔线。</li>
+        </ol>
+        <p class="muted">标准命令行版 <code>k5prog</code>（piotr022/sergev）只读写 EEPROM、不刷固件；刷固件请用图形界面的 k5prog-win。</p>
+      </section>
+
+      <section class="article">
+        <h2>3. 方法 B：K5Web（网页刷机，losehu 推荐）</h2>
+        <ol>
+          <li>用 <b>Chrome / Edge</b> 打开 <a href="https://k5.vicicode.com/" target="_blank" rel="noopener">k5.vicicode.com</a>。</li>
+          <li>点连接，在浏览器串口列表里选对应 COM 口。</li>
+          <li>若有「备份」功能，先备份原厂固件。</li>
+          <li>选择固件文件 <code>LOSEHU133.bin</code>，点刷写，等待完成。</li>
+        </ol>
+      </section>
+
+      <section class="article">
+        <h2>4. 验证</h2>
+        <ol>
+          <li>重启对讲机，看开机画面（应变为 LOSEHU 的欢迎界面）。</li>
+          <li>用本站的 <a href="uv-k6-basetext.html">「基础版文字写入」工具</a> 连接，识别到的版本号应含 <code>LOSEHU</code>（不再是原厂如 7.01.09）。</li>
+          <li>之后即可用文字工具改写两行开机文字。</li>
+        </ol>
+      </section>
+
+      <section class="article">
+        <h2>⚠️ 注意事项</h2>
+        <ul>
+          <li><b>升级过程中绝对不能断电 / 拔线</b>，否则可能变砖。</li>
+          <li>刷完开不了机：重新进入升级模式，用备份的原厂固件刷回去。</li>
+          <li>基础版 <code>LOSEHU133.bin</code> <b>不需要扩容 EEPROM</b>，适合原厂机器；但<b>没有开机图片功能</b>（图片需 K/H 版 + 扩容）。</li>
+          <li>刷机有风险，请务必先备份、谨慎操作。</li>
+        </ul>
+      </section>
+
+      <section class="article">
+        <h2>相关工具</h2>
+        <ul>
+          <li><a href="uv-k6-basetext.html">基础版开机文字写入</a>：适合没扩容的原厂机器，改写两行开机文字（英文/数字）。</li>
+          <li><a href="uv-k6-bootlogo.html">开机画面定制</a>：适合已扩容 + K/H/HS 固件的机器，写图片或把文字渲染进图片。</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+  <footer class="footer">
+    <span>© 2026 Thomas Young · 在方程与风之间</span>
+    <span><a href="about.html">关于</a><a href="archive.html">全站目录</a><a href="https://github.com/youngthomas37-beep">GitHub ↗</a></span>
+  </footer>
+</div>
+</body>
+</html>
