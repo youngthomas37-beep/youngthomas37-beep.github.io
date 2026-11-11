@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="泉盛 UV-K5/K6 基础版固件开机文字写入：连接对讲机，输入两行英文/数字，写入开机文字。">
+<meta name="description" content="泉盛 UV-K6 V3 自定义文字指南：频道名（ChName）、开机提示（BootHnt）怎么改，用叮咚鸡（Dondji）固件自带菜单和写频工具。">
 <meta name="theme-color" content="#f6f4ee">
-<title>UV-K6 开机文字写入（基础版） · Thomas Young</title>
+<title>UV-K6 V3 自定义文字 · Thomas Young</title>
 <link rel="stylesheet" href="site.css">
 <script src="site.js" defer></script>
-<script src="k5-basetext-writer.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">跳到正文</a>
@@ -61,36 +60,37 @@
       </div>
     </aside>
     <main class="content" id="main">
-      <div class="breadcrumb"><a href="index.html">首页</a> / <a href="flight.html">滑翔伞实验室</a> / UV-K6 开机文字（基础版）</div>
+      <div class="breadcrumb"><a href="index.html">首页</a> / <a href="flight.html">滑翔伞实验室</a> / UV-K6 V3 自定义文字</div>
       <header class="page-intro">
-        <div class="kicker">TOOL / 工具</div>
-        <h1>UV-K6 开机文字写入（基础版）</h1>
-        <p>给未扩容 EEPROM 的 UV-K5/K6 用：连接对讲机，输入两行英文/数字，写入基础版固件的开机文字。纯浏览器直连，无需安装软件。</p>
+        <div class="kicker">GUIDE / 指南</div>
+        <h1>UV-K6 V3 自定义文字</h1>
+        <p>V3 机器上怎么改「显示的文字」——频道名、开机提示。用叮咚鸡（Dondji）固件自带的菜单和网页写频工具即可。</p>
       </header>
 
-      <section class="article" style="border-left:4px solid #4a8f5a;background:#f2fbf4;padding:16px 18px;border-radius:8px;margin-bottom:18px">
-        <h2 style="margin-top:0">适合谁用</h2>
+      <section class="article">
+        <h2>能改哪些文字</h2>
         <ul>
-          <li><b>适合</b>：原厂 UV-K6（未扩容 EEPROM），刷了 <b>LOSEHU 基础版固件</b> <code>LOSEHU133.bin</code>（中文）或 <code>LOSEHU133E.bin</code>（英文）。</li>
-          <li><b>写什么</b>：基础版固件的两行「开机文字」——地址 <code>0x0EB0</code>（第 1 行）/ <code>0x0EC0</code>（第 2 行），各 16 字节。</li>
-          <li><b>不支持</b>：中文（基础版的中文是固件内部单字节字形表，不是标准 GB2312）；开机图片（需要扩容 + K/H 固件，请用「开机画面定制」工具）。</li>
+          <li><b>频道名</b>：菜单 <code>ChName</code>（命名信道），支持中文；也可用 <a href="https://ethanyan6.github.io/Dondji/" target="_blank" rel="noopener">Dondji 刷机站</a>的「写频」页，批量导入 Excel。</li>
+          <li><b>开机提示</b>：菜单 <code>BootHnt</code>（开机提示），选项有 Dondji / Beautiful BJ / happy 55th 等。</li>
+          <li><b>开机画面（图片）</b>：见 <a href="uv-k6-bootlogo.html">UV-K6 V3 开机画面指南</a>。</li>
         </ul>
-        <p class="muted">⚠️ 刷机有风险：刷前请务必备份原厂固件。</p>
+      </section>
+
+      <section class="article" style="border-left:4px solid #c98a00;background:#fff8e1;padding:16px 18px;border-radius:8px;margin-bottom:18px">
+        <h2 style="margin-top:0">⚠️ 关于旧的「基础版文字写入」工具</h2>
+        <p>本站曾提供一个网页工具，直接写 EEPROM <code>0x0EB0</code>/<code>0x0EC0</code> 的两行开机文字。那是给 <b>旧版 V1/V2 的 LOSEHU 基础版固件</b>用的，<b>对 V3 不适用</b>（V3 是 PY32F071，存储布局完全不同），而且从未在真机验证过，因此<b>已下线</b>。</p>
+        <p>V3 用户请用上面的 Dondji 菜单 / 写频页。</p>
       </section>
 
       <section class="article">
-        <h2>使用步骤</h2>
+        <h2>写频批量改频道名</h2>
         <ol>
-          <li>点「连接对讲机」，选串口（COM 口）。</li>
-          <li>点「读取当前文字」可先看当前的开机文字。</li>
-          <li>在两行输入框里输入英文/数字（每行最多 16 个字符）。</li>
-          <li>点「写入文字」→ 重启对讲机查看。</li>
+          <li>用 Chrome / Edge 打开 <a href="https://ethanyan6.github.io/Dondji/" target="_blank" rel="noopener">Dondji 刷机站</a>。</li>
+          <li>机器<b>正常开机</b>（不是 BOOT 模式），连 USB。</li>
+          <li>找「写频」区域：「从设备读取」把现有信道读出来，或在 Excel 里编辑好再「导入 Excel → 写入设备」。</li>
+          <li>读写后连接会自动断开，这是正常的防呆设计，重新点一次即可继续。</li>
         </ol>
-      </section>
-
-      <section class="article">
-        <h2>写文字</h2>
-        <k5-basetext-writer></k5-basetext-writer>
+        <p class="muted">写频功能仅适用于叮咚鸡固件；原厂固件请用泉盛官方写频软件。</p>
       </section>
     </main>
   </div>
