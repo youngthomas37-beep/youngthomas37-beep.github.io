@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="连接泉盛 UV-K5/K6，上传图片或输入呼号，写入对讲机开机画面。浏览器直连（Web Serial），无需安装软件。">
+<meta name="description" content="泉盛 UV-K6 V3 自定义开机画面指南：用叮咚鸡（Dondji）网页工具上传 128×64 图片，并在菜单 POnMsg 里选 Logo。">
 <meta name="theme-color" content="#f6f4ee">
-<title>UV-K6 开机画面定制 · Thomas Young</title>
+<title>UV-K6 V3 开机画面指南 · Thomas Young</title>
 <link rel="stylesheet" href="site.css">
 <script src="site.js" defer></script>
-<script src="k5-bootlogo-writer.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">跳到正文</a>
@@ -61,43 +60,51 @@
       </div>
     </aside>
     <main class="content" id="main">
-      <div class="breadcrumb"><a href="index.html">首页</a> / <a href="flight.html">滑翔伞实验室</a> / UV-K6 开机画面</div>
+      <div class="breadcrumb"><a href="index.html">首页</a> / <a href="flight.html">滑翔伞实验室</a> / UV-K6 V3 开机画面</div>
       <header class="page-intro">
-        <div class="kicker">TOOL / 工具</div>
-        <h1>UV-K6 开机画面定制</h1>
-        <p>连接泉盛 UV-K5/K6，上传图片或输入呼号，写入对讲机开机画面。纯浏览器直连（Web Serial），无需安装任何软件。</p>
+        <div class="kicker">GUIDE / 指南</div>
+        <h1>UV-K6 V3 自定义开机画面</h1>
+        <p>泉盛 UV-K6 的 <b>V3</b> 版本（PY32F071 芯片）如何换上自己的 128×64 开机图片——用叮咚鸡（Dondji）网页工具，纯浏览器操作。</p>
       </header>
 
       <section class="article" style="border-left:4px solid #c98a00;background:#fff8e1;padding:16px 18px;border-radius:8px;margin-bottom:18px">
-        <h2 style="margin-top:0">⚠️ 使用前必读（硬件与固件限制）</h2>
-        <p>本工具写入的是对讲机 EEPROM 的 <b>0x02080</b> 区域（开机图片，以及渲染进图片的文字）。它有硬性前提，<b>不满足则无法使用</b>：</p>
+        <h2 style="margin-top:0">⚠️ 先确认你的机器是 V3</h2>
+        <p>UV-K6 有多个硬件版本，<b>只有 V3（PY32F071）能用本文的方法</b>：</p>
         <ul>
-          <li><b>固件</b>：必须是 <b>LOSEHU 自定义固件的 K / H / HS 版本</b>。原厂固件（例如连接后识别到的版本号如 <code>7.01.09</code>）没有该功能，本工具会直接拒绝并提示。</li>
-          <li><b>EEPROM 必须扩容</b>：<b>K 版</b>需 ≥ 1Mib（约 128KB，如 24C1024），<b>H / HS 版</b>需 ≥ 2Mib（约 256KB，如 24C2048）。原厂 UV-K6 的 EEPROM 通常只有约 8KB（24C64），<b>远小于所需容量</b>——要使用本工具，必须物理更换 EEPROM 芯片（硬件改造、需要焊接）。</li>
+          <li>翻到机器<b>背面标签</b>，看有没有「V3」字样；</li>
+          <li>V3 连电脑后，USB 设备的 <b>PID 通常是 <code>FFFF</code></b>（旧版是 <code>0001</code>）；</li>
+          <li>不确定就问卖家，或看购买时间（2025 年后的新机多为 V3）。</li>
         </ul>
-        <p><b>如果你的 UV-K6 没有扩容 EEPROM（原厂状态）：</b></p>
-        <ul>
-          <li>本工具<b>无法使用</b>（要写入的地址超出 EEPROM 容量）。</li>
-          <li>可以刷<b>基础版 <code>LOSEHU133.bin</code></b>（无需扩容），然后用 👉 <a href="uv-k6-basetext.html"><b>「基础版文字写入」工具</b></a> 改写两行开机文字（英文/数字）。但请注意：<b>这不等于本工具的功能</b>——本工具写的是图片位图，基础版用不了。</li>
-        </ul>
-        <p class="muted">⚠️ 刷机有风险：刷前请务必先备份原厂固件；硬件扩容属焊接改造，操作不当可能损坏对讲机，请谨慎。</p>
+        <p><b>旧版 V1/V2（DP32G030）不要照本文操作</b>，两者固件/存储完全不同。</p>
       </section>
 
       <section class="article">
-        <h2>使用步骤（仅适用于已扩容 + K/H/HS 固件）</h2>
+        <h2>步骤</h2>
         <ol>
-          <li>点「连接对讲机」，在浏览器弹出的串口列表里选择 COM 口。</li>
-          <li>页面会显示识别到的固件版本；只有 <code>LOSEHU xxxK / xxxH / xxxHS</code> 才能继续。</li>
-          <li>上传图片，和/或输入呼号文字；预览即最终效果。</li>
-          <li>点「写入开机图片」；也可先点「读回当前开机画面」查看当前画面。</li>
-          <li>重启对讲机查看效果。</li>
+          <li><b>刷叮咚鸡（Dondji）固件</b>：用 <a href="https://ethanyan6.github.io/Dondji/" target="_blank" rel="noopener">Dondji 刷机站</a>，进入 BOOT 模式（关机 → 按住 PTT → 旋转旋钮开机），选「刷固件」。</li>
+          <li><b>上传开机图片</b>：固件刷好后，在刷机站找「<b>开机图片</b>」区域，选择 PNG / JPG / BMP 图片。工具会自动缩放并转成 <b>128×64 单色位图</b>，可调阈值、反色、预览。</li>
+          <li><b>机器上选 Logo</b>：在菜单里找到 <code>POnMsg</code>（开机画面），把选项设为 <code>Logo</code>。</li>
+          <li><b>重启</b>对讲机，开机时就会显示你上传的图片。</li>
         </ol>
-        <p>说明：开机画面为 128×64 单色；照片建议 2:1 横图，文字建议短而大（呼号等）。</p>
       </section>
 
       <section class="article">
-        <h2>定制器</h2>
-        <k5-bootlogo-writer></k5-bootlogo-writer>
+        <h2>POnMsg 的选项含义</h2>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr><th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">选项</th><th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">含义</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:6px"><code>None</code></td><td style="padding:6px">开机不显示画面</td></tr>
+            <tr><td style="padding:6px"><code>Default</code></td><td style="padding:6px">固件默认开机画面</td></tr>
+            <tr><td style="padding:6px"><code>Logo</code></td><td style="padding:6px"><b>你上传的自定义图片</b>（选这个）</td></tr>
+          </tbody>
+        </table>
+        <p class="muted">提示：<code>POnMsg</code> 和 <code>BootHnt</code>（开机提示）、<code>BootSnd</code>（开机音效）、<code>BLTime</code>（背光时间）在同一组菜单里，方便找。</p>
+      </section>
+
+      <section class="article">
+        <h2>关于本站原来的「开机画面定制」工具</h2>
+        <p>本站曾提供一个网页直连写开机画面的工具，它是为 <b>旧版 UV-K5/K6（V1/V2，DP32G030）</b> 写的（写入 EEPROM <code>0x02080</code>），并且依赖 LOSEHU K/H/HS 固件 + EEPROM 扩容。它<b>从未在真机上验证过</b>，对 V3 也完全不适用，因此<b>已下线</b>。</p>
+        <p>如果你用的是 V3，请直接用上面的 Dondji 方案；如果你用的是旧版 V1/V2，建议使用对应固件社区的成熟工具。</p>
       </section>
     </main>
   </div>
