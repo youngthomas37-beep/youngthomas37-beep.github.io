@@ -1,6 +1,7 @@
 'use strict';
 (() => {
   const entries = [
+    ['28年走回家 · 卡尔·布什比卫星路线图','bushby-globe.html','卡尔 布什比 Karl Bushby Goliath 地球 卫星 地图 轨迹 路线 智利 英国 旅程 历史 距离 徒步'],
     ['钱学森的毕业课题','qian-xuesen-graduation-project.html','钱学森 轨道 火箭 Java 地月 日地月 太阳 三圈 自由返回'],
     ['地月自由返回·经典版','qian-xuesen-earth-moon-classic.html','钱学森 地球 月球 CR3BP 自由返回 经典'],
     ['日地月三圈任务·动力版','qian-xuesen-solar-three-orbits.html','钱学森 太阳 地球 月球 绕月 三圈 推力 燃料 Java'],
